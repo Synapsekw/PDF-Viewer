@@ -12,10 +12,10 @@ import { FeatureOverlay } from '../base/FeatureOverlay';
 import { throttleAndSample, performanceMonitor } from '../../utils/performance';
 
 interface TimeRegion {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number; // PDF coordinates (zoom-independent)
+  y: number; // PDF coordinates (zoom-independent)
+  width: number; // PDF size (zoom-independent)
+  height: number; // PDF size (zoom-independent)
   timeSpent: number;
   lastUpdate: number;
 }
@@ -31,6 +31,7 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
   const regionSize = 20; // Size of each time tracking region (matching MouseHeatmap's gridSize)
   const animationFrameRef = useRef<number | undefined>(undefined);
+  const baseRegionSizeRef = useRef<number>(20); // Base region size in PDF coordinates
 
   // Monitor live view settings
   useEffect(() => {
@@ -73,25 +74,30 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
         const displayWidth = rect.width;
         const displayHeight = rect.height;
         
-        // Use the exact same method that canvas uses for coordinate mapping
-        // This accounts for the canvas's internal scaling automatically
-        const x = (rawX / displayWidth) * canvasWidth;
-        const y = (rawY / displayHeight) * canvasHeight;
+        // Convert to canvas coordinates first
+        const canvasX = (rawX / displayWidth) * canvasWidth;
+        const canvasY = (rawY / displayHeight) * canvasHeight;
         
-        console.log('TimeVisualizer simplified coordinate debug:', {
+        // Then convert canvas coordinates to PDF coordinates (zoom-independent)
+        // PDF coordinates = canvas coordinates / scale
+        const x = canvasX / scale;
+        const y = canvasY / scale;
+        
+        console.log('TimeVisualizer PDF coordinate debug:', {
           mouse: { clientX: event.clientX, clientY: event.clientY },
           canvasRect: { left: rect.left, top: rect.top, width: displayWidth, height: displayHeight },
-          canvas: { width: canvasWidth, height: canvasHeight },
-          raw: { x: rawX, y: rawY },
-          ratio: { x: rawX / displayWidth, y: rawY / displayHeight },
-          final: { x, y },
+          canvas: { width: canvasWidth, height: canvasHeight, x: canvasX, y: canvasY },
+          pdfCoords: { x, y },
           pdfScale: scale
         });
 
-        // Only track if mouse is over the canvas and within actual canvas bounds
-        const margin = 5;
-        if (x >= margin && y >= margin && x <= canvasWidth - margin && y <= canvasHeight - margin) {
-          lastMousePosition.current = { x, y };
+        // Check bounds in PDF coordinates
+        const pdfWidth = canvasWidth / scale;
+        const pdfHeight = canvasHeight / scale;
+        const margin = 5 / scale; // Scale margin to PDF coordinates
+        
+        if (x >= margin && y >= margin && x <= pdfWidth - margin && y <= pdfHeight - margin) {
+          lastMousePosition.current = { x, y }; // Store PDF coordinates
         }
       } finally {
         endTiming();
@@ -126,39 +132,37 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
 
       const { x, y } = lastMousePosition.current;
       
-      // Calculate region key based on mouse position using PDF coordinates
-      // For accurate tracking at any zoom level, we need to use the actual PDF coordinates
-      // This matches the approach used in MouseHeatmap
-      
-      // Get the actual canvas dimensions
+      // Working in PDF coordinates for zoom-independent tracking
       const canvas = canvasRef.current;
       if (!canvas) return;
       
-      // Calculate region coordinates as a proportion of canvas size
-      // This ensures regions scale with zoom level like MouseHeatmap does
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
+      // Get PDF dimensions (canvas dimensions / scale)
+      const pdfWidth = canvas.width / scale;
+      const pdfHeight = canvas.height / scale;
       
-      // Calculate grid coordinates based on canvas dimensions (like MouseHeatmap)
-      const gridCellsX = Math.ceil(canvasWidth / regionSize);
-      const gridCellsY = Math.ceil(canvasHeight / regionSize);
+      // Use base region size in PDF coordinates
+      const pdfRegionSize = baseRegionSizeRef.current;
       
-      // Find which grid cell the mouse is in
-      const gridX = Math.floor((x / canvasWidth) * gridCellsX);
-      const gridY = Math.floor((y / canvasHeight) * gridCellsY);
+      // Calculate grid based on PDF dimensions
+      const gridCellsX = Math.ceil(pdfWidth / pdfRegionSize);
+      const gridCellsY = Math.ceil(pdfHeight / pdfRegionSize);
       
-      // Calculate the actual region boundaries (like MouseHeatmap grid cells)
-      const regionX = gridX * (canvasWidth / gridCellsX);
-      const regionY = gridY * (canvasHeight / gridCellsY);
+      // Find grid cell in PDF coordinates
+      const gridX = Math.floor(x / pdfRegionSize);
+      const gridY = Math.floor(y / pdfRegionSize);
+      
+      // Calculate region boundaries in PDF coordinates
+      const regionX = gridX * pdfRegionSize;
+      const regionY = gridY * pdfRegionSize;
       const regionKey = `${currentPage}-${gridX}-${gridY}`;
       
-      console.log('TimeVisualizer region calculation:', {
+      console.log('TimeVisualizer PDF region calculation:', {
         mouse: { x, y },
-        canvas: { width: canvasWidth, height: canvasHeight },
+        pdf: { width: pdfWidth, height: pdfHeight },
         grid: { cellsX: gridCellsX, cellsY: gridCellsY },
         gridPos: { x: gridX, y: gridY },
         regionBounds: { x: regionX, y: regionY },
-        regionSize: { width: canvasWidth / gridCellsX, height: canvasHeight / gridCellsY },
+        regionSize: pdfRegionSize,
         pdfScale: scale
       });
       
@@ -176,9 +180,9 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
       setTimeRegions(prev => {
         const newRegions = new Map(prev);
         
-        // Calculate actual region dimensions for this canvas size
-        const regionWidth = canvasWidth / gridCellsX;
-        const regionHeight = canvasHeight / gridCellsY;
+        // Region dimensions in PDF coordinates
+        const regionWidth = pdfRegionSize;
+        const regionHeight = pdfRegionSize;
         
         // Update cells within radius
         for (let dy = -updateRadius; dy <= updateRadius; dy++) {
@@ -209,7 +213,7 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
                 existingRegion.timeSpent += timeToAdd;
                 existingRegion.lastUpdate = now;
               } else {
-                // Create new region with actual canvas-relative dimensions
+                // Create new region with PDF coordinates
                 newRegions.set(currentRegionKey, {
                   x: currentRegionX,
                   y: currentRegionY,
@@ -262,20 +266,18 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
     // Find max time spent for scaling
     const maxTime = Math.max(...currentPageRegions.map(r => r.timeSpent));
     
-    // Since we're now using actual canvas coordinates for tracking,
-    // the regions are already in the correct coordinate system
-    // No additional scaling needed for rendering
-    const scaleFactorX = 1;
-    const scaleFactorY = 1;
+    // Convert PDF coordinates to canvas coordinates for rendering
+    // Canvas coordinates = PDF coordinates * scale
+    const scaleFactorX = scale;
+    const scaleFactorY = scale;
     
     console.log('Time Visualizer Rendering:', {
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
       pdfCanvasWidth: pdfCanvas.width,
       pdfCanvasHeight: pdfCanvas.height,
-      scaleFactorX,
-      scaleFactorY,
-      scale,
+      scaleFactor: { x: scaleFactorX, y: scaleFactorY },
+      pdfScale: scale,
       regionsCount: currentPageRegions.length
     });
 
@@ -328,8 +330,9 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
         }
         
         console.log('Rendering time region:', {
-          original: { x: region.x, y: region.y, width: region.width, height: region.height },
-          scaled: { x: scaledX, y: scaledY, width: scaledWidth, height: scaledHeight },
+          pdfCoords: { x: region.x, y: region.y, width: region.width, height: region.height },
+          canvasCoords: { x: scaledX, y: scaledY, width: scaledWidth, height: scaledHeight },
+          scale: scale,
           timeSpent: region.timeSpent
         });
       }
