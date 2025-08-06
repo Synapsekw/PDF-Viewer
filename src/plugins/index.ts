@@ -9,6 +9,8 @@ import { PdfFeatureComponent } from '../pdf/types';
 import { MouseHeatmap } from '../features/analytics/MouseHeatmap';
 import { AnalyticsOverlay } from '../features/analytics/AnalyticsOverlay';
 import { PerformanceMonitor } from '../features/analytics/PerformanceMonitor';
+import { InteractionVisualizer } from '../features/analytics/InteractionVisualizer';
+import { TimeVisualizer } from '../features/analytics/TimeVisualizer';
 
 /**
  * Configuration for a PDF viewer plugin.
@@ -54,12 +56,40 @@ export const AVAILABLE_PLUGINS: PluginConfig[] = [
     id: 'analytics-overlay',
     name: 'Analytics Overlay',
     description: 'Displays analytics information as an overlay',
-    enabled: true,
+    enabled: false, // Disabled - using toolbar button instead
     priority: 2,
     component: AnalyticsOverlay,
     config: {
       position: 'top-right',
       showSessionInfo: true,
+    },
+  },
+  {
+    id: 'interaction-visualizer',
+    name: 'Interaction Visualizer',
+    description: 'Shows click, scroll, and zoom events as colored dots',
+    enabled: true,
+    priority: 3,
+    component: InteractionVisualizer,
+    config: {
+      maxAge: 30000,
+      animationDuration: 2000,
+      showLegend: true,
+    },
+  },
+  {
+    id: 'time-visualizer',
+    name: 'Time Visualizer',
+    description: 'Shows areas where user spends more time viewing',
+    enabled: true,
+    priority: 4,
+    component: TimeVisualizer,
+    config: {
+      regionSize: 20, // Match the code implementation for consistency
+      updateInterval: 200, // Reduced frequency for better performance
+      maxAge: 30000,
+      throttleInterval: 50, // Same as MouseHeatmap
+      sampleRate: 0.2, // Same as MouseHeatmap
     },
   },
   {
