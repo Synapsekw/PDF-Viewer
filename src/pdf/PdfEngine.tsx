@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
 
@@ -36,6 +36,8 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
   const internalCanvasRef = React.useRef<HTMLCanvasElement>(null);
+  const isRenderingRef = useRef(false);
+  const pendingRenderRef = useRef<{page: number, scale: number, rotation: number} | null>(null);
   
   const canvasRef = externalCanvasRef || internalCanvasRef;
 
@@ -79,47 +81,79 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     };
   }, [file]);
 
-  // Render page when page number, scale, or rotation changes
-  useEffect(() => {
-    const renderPage = async () => {
-      if (!pdfDocument || !canvasRef.current || !currentPage) {
+  // Function to render a page
+  const renderPage = async (pageNum: number, pageScale: number, pageRotation: number) => {
+    if (!pdfDocument || !canvasRef.current) {
+      return;
+    }
+
+    // If already rendering, store these parameters for later
+    if (isRenderingRef.current) {
+      pendingRenderRef.current = {
+        page: pageNum,
+        scale: pageScale,
+        rotation: pageRotation
+      };
+      return;
+    }
+
+    try {
+      isRenderingRef.current = true;
+
+      // Clean up previous page
+      if (currentPageObj) {
+        currentPageObj.cleanup();
+        setCurrentPageObj(null);
+      }
+
+      // Load new page
+      const newPage = await pdfDocument.getPage(pageNum);
+      setCurrentPageObj(newPage);
+
+      // Calculate viewport
+      const viewport = newPage.getViewport({ scale: pageScale, rotation: pageRotation });
+
+      // Set canvas dimensions
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (!context) {
+        console.error('Failed to get canvas context');
+        isRenderingRef.current = false;
         return;
       }
 
-      try {
-        // Clean up previous page
-        currentPageObj?.cleanup();
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
 
-        // Load new page
-        const newPage = await pdfDocument.getPage(currentPage);
-        setCurrentPageObj(newPage);
+      // Render PDF page
+      await newPage.render({
+        canvasContext: context,
+        viewport,
+      }).promise;
 
-        // Calculate viewport
-        const viewport = newPage.getViewport({ scale: scale || 1, rotation: rotation || 0 });
+      isRenderingRef.current = false;
 
-        // Set canvas dimensions
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        if (!context) {
-          console.error('Failed to get canvas context');
-          return;
+      // Check if there's a pending render request
+      if (pendingRenderRef.current) {
+        const { page, scale, rotation } = pendingRenderRef.current;
+        pendingRenderRef.current = null;
+        
+        // Only trigger a new render if the parameters have changed
+        if (page !== pageNum || scale !== pageScale || rotation !== pageRotation) {
+          renderPage(page, scale, rotation);
         }
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        // Render PDF page
-        await newPage.render({
-          canvasContext: context,
-          viewport,
-          canvas,
-        }).promise;
-      } catch (error) {
-        console.error('Failed to render page:', error);
       }
-    };
+    } catch (error) {
+      console.error('Failed to render page:', error);
+      isRenderingRef.current = false;
+    }
+  };
 
-    renderPage();
+  // Render page when page number, scale, or rotation changes
+  useEffect(() => {
+    if (!pdfDocument || !currentPage) return;
+    
+    renderPage(currentPage, scale || 1, rotation || 0);
   }, [pdfDocument, currentPage, scale, rotation]);
 
   return <canvas ref={canvasRef} />;

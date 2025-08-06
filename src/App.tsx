@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { PdfProvider } from './pdf/PdfContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { PdfEngine } from './pdf/PdfEngine';
-import { FileUpload, Navigation, ViewControls, SnippingControls, ExportControls } from './components/controls';
+import { FileUpload, Navigation, ViewControls, SnippingControls, ExportControls, AnalyticsControls } from './components/controls';
 import { Modal } from './components/Modal';
 import { FeatureRegistry } from './features/base/FeatureRegistry';
 import { SnippingToolEnhanced } from './features/snipping/SnippingTool';
@@ -35,9 +35,15 @@ const App: React.FC = () => {
   const [currentSelection, setCurrentSelection] = useState<SelectionRect | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [loadedPlugins, setLoadedPlugins] = useState<PluginConfig[]>([]);
+  const pluginsInitialized = useRef(false);
 
   // Load and register plugins on mount
   useEffect(() => {
+    // Prevent duplicate initialization in React Strict Mode
+    if (pluginsInitialized.current) {
+      return;
+    }
+    
     const enabledPlugins = getPlugins(undefined, true);
     
     // Register plugins with the FeatureRegistry
@@ -46,6 +52,7 @@ const App: React.FC = () => {
     });
     
     setLoadedPlugins(enabledPlugins);
+    pluginsInitialized.current = true;
     
     console.debug(`Loaded ${enabledPlugins.length} plugins:`, 
       enabledPlugins.map(p => p.name).join(', '));
@@ -93,6 +100,7 @@ const App: React.FC = () => {
               onSnippingAction={handleSnippingAction}
             />
             <ExportControls onOpenExportPanel={handleOpenExportPanel} />
+            <AnalyticsControls />
           </div>
         <div className="viewer" ref={containerRef}>
           <PdfEngine canvasRef={canvasRef} />
