@@ -18,6 +18,7 @@
 
 .viewer {
   flex: 1;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -303,4 +304,29 @@ button:hover:not(:disabled) {
 .export-panel input[type="radio"], 
 .export-panel input[type="checkbox"] {
   margin: 0;
+}
+
+/* Analytics Controls */
+.analytics-type-selector {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.analytics-type-selector:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.control-button.active {
+  background-color: #28a745;
+  color: white;
+}
+
+.control-button.active:hover {
+  background-color: #218838;
 }

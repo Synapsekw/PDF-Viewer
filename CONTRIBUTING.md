@@ -283,6 +283,36 @@ export const AnnotationOverlay: PdfFeatureComponent = {
 2. **JSDoc Comments**: Document all public interfaces and methods
 3. **Generic Types**: Use generics for reusable plugin components
 
+### Plugin Development
+
+1. **Component Structure**: Always include a `displayName` in your `PdfFeatureComponent`
+   ```typescript
+   export const MyPlugin: PdfFeatureComponent = {
+     displayName: 'MyPlugin', // Required - must be unique
+     Component: MyPluginComponent,
+     config: { /* optional config */ }
+   };
+   ```
+
+2. **React Strict Mode**: Handle duplicate registrations gracefully
+   - Components may render twice in development mode
+   - Use refs to prevent duplicate initialization
+   - The FeatureRegistry automatically handles re-registrations
+
+3. **Performance Optimization**: Use built-in utilities for high-frequency events
+   ```typescript
+   import { throttle, debounce, sample } from '../../utils/performance';
+   
+   const throttledHandler = throttle(handleMouseMove, 50);
+   const debouncedSave = debounce(saveData, 300);
+   const sampledTracker = sample(trackEvent, 0.1); // 10% sampling
+   ```
+
+4. **Memory Management**: 
+   - Use `CircularBuffer` for large datasets
+   - Monitor memory usage with performance monitor (Ctrl+Shift+P)
+   - Implement proper cleanup in useEffect returns
+
 ### Error Handling
 
 ```typescript

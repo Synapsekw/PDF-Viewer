@@ -21,8 +21,22 @@ export class FeatureRegistry {
   static register(feature: PdfFeatureComponent): void {
     const id = feature.displayName;
     
+    if (!id) {
+      console.error('Feature component must have a displayName');
+      return;
+    }
+    
     if (this.features.has(id)) {
-      console.warn(`Feature with ID "${id}" is already registered. Overwriting...`);
+      // In development mode, React Strict Mode can cause duplicate registrations
+      // Only warn if this is a different component (not just a re-registration)
+      const existing = this.features.get(id);
+      if (existing !== feature) {
+        console.warn(`Feature with ID "${id}" is already registered with a different component. Overwriting...`);
+      } else {
+        // Same component being re-registered - this is normal in development
+        console.debug(`Feature "${id}" already registered (React Strict Mode re-registration)`);
+        return;
+      }
     }
     
     this.features.set(id, feature);
