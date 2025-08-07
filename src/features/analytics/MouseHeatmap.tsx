@@ -17,7 +17,7 @@ const DEFAULT_CONFIG: HeatmapConfig = {
 };
 
 const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
-  const { currentPage, scale, rotation } = usePdf();
+  const { currentPage, scale, rotation, document: pdfDocument } = usePdf();
   const { updateHeatmapData, recordInteraction } = useAnalytics();
   const [heatmapData, setHeatmapData] = useState<Map<number, PageHeatmapData>>(new Map());
   const [config] = useState<HeatmapConfig>(DEFAULT_CONFIG);
@@ -34,7 +34,7 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
       const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
       const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
       
-
+      console.log('MouseHeatmap: Checking settings:', { isEnabled, analyticsType });
       
       // Only update state if values have actually changed
       setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
@@ -459,7 +459,16 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
   }, [scale, rotation]);
 
   // Only render heatmap if live view is enabled and heatmap type is selected
+  console.log('MouseHeatmap render check:', { isLiveViewEnabled, selectedAnalyticsType, hasPdfDocument: !!pdfDocument });
   if (!isLiveViewEnabled || selectedAnalyticsType !== 'heatmap') {
+    console.log('MouseHeatmap: Not rendering due to conditions not met');
+    return null;
+  }
+  
+  console.log('MouseHeatmap: Rendering component');
+
+  // Don't render if no document is loaded
+  if (!pdfDocument) {
     return null;
   }
 

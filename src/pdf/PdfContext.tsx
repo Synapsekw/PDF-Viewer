@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { PDFDocumentProxy } from 'pdfjs-dist';
 import { PdfContextType } from './types';
 
@@ -12,11 +12,17 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
   const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState(1.0); // 100% starting zoom
   const [rotation, setRotation] = useState(0);
   const [file, setFile] = useState<string | Uint8Array | null>(null);
+  
+  // Debug logging for file changes
+  useEffect(() => {
+    console.log('PdfContext: File state changed:', file ? `Uint8Array(${file instanceof Uint8Array ? file.length : 'string'})` : 'null');
+  }, [file]);
 
   const handleSetDocument = (doc: PDFDocumentProxy) => {
+    console.log('PdfContext: Setting document with', doc.numPages, 'pages');
     setDocument(doc);
     setTotalPages(doc.numPages);
     setCurrentPage(1);
@@ -46,6 +52,7 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
       setRotation(normalized);
     },
     setFile: (newFile: string | Uint8Array) => {
+      console.log('PdfContext: setFile called with:', typeof newFile, newFile instanceof Uint8Array ? `Uint8Array(${newFile.length})` : newFile);
       setFile(newFile);
     }
   };
