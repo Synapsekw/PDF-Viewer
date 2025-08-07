@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../theme/ThemeProvider';
 import { 
   Upload, 
   Download, 
@@ -45,6 +47,57 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
   onToggleAnalytics,
   onExportAnalytics
 }) => {
+  const navigate = useNavigate();
+  const { colorTheme } = useTheme();
+
+  // Color theme configurations with enhanced gradients
+  const getBackgroundClasses = () => {
+    switch (colorTheme) {
+      case 'green':
+        return {
+          base: 'bg-gradient-to-br from-emerald-950 via-emerald-800 via-emerald-600 to-emerald-950',
+          cross1: 'bg-gradient-to-tr from-emerald-700/40 via-emerald-500/20 via-transparent to-emerald-800/40',
+          cross2: 'bg-gradient-to-bl from-emerald-950/30 via-transparent via-emerald-600/20 to-emerald-700/30'
+        };
+      case 'blue':
+        return {
+          base: 'bg-gradient-to-br from-blue-950 via-blue-800 via-blue-600 to-blue-950',
+          cross1: 'bg-gradient-to-tr from-blue-700/40 via-blue-500/20 via-transparent to-blue-800/40',
+          cross2: 'bg-gradient-to-bl from-blue-950/30 via-transparent via-blue-600/20 to-blue-700/30'
+        };
+      case 'purple':
+        return {
+          base: 'bg-gradient-to-br from-purple-950 via-purple-800 via-purple-600 to-purple-950',
+          cross1: 'bg-gradient-to-tr from-purple-700/40 via-purple-500/20 via-transparent to-purple-800/40',
+          cross2: 'bg-gradient-to-bl from-purple-950/30 via-transparent via-purple-600/20 to-purple-700/30'
+        };
+      case 'pink':
+        return {
+          base: 'bg-gradient-to-br from-pink-950 via-pink-800 via-pink-600 to-pink-950',
+          cross1: 'bg-gradient-to-tr from-pink-700/40 via-pink-500/20 via-transparent to-pink-800/40',
+          cross2: 'bg-gradient-to-bl from-pink-950/30 via-transparent via-pink-600/20 to-pink-700/30'
+        };
+      case 'yellow':
+        return {
+          base: 'bg-gradient-to-br from-amber-950 via-amber-800 via-amber-600 to-amber-950',
+          cross1: 'bg-gradient-to-tr from-amber-700/40 via-amber-500/20 via-transparent to-amber-800/40',
+          cross2: 'bg-gradient-to-bl from-amber-950/30 via-transparent via-amber-600/20 to-amber-700/30'
+        };
+      default: // slate
+        return {
+          base: 'bg-gradient-to-br from-slate-950 via-slate-800 via-slate-600 to-slate-950',
+          cross1: 'bg-gradient-to-tr from-slate-700/40 via-slate-500/20 via-transparent to-slate-800/40',
+          cross2: 'bg-gradient-to-bl from-slate-950/30 via-transparent via-slate-600/20 to-slate-700/30'
+        };
+    }
+  };
+
+  const backgroundClasses = getBackgroundClasses();
+
+  const handleLogoClick = () => {
+    console.log('Logo clicked, navigating to landing page');
+    navigate('/');
+  };
   const [inputMessage, setInputMessage] = useState('');
   const [showAnalyticsDropdown, setShowAnalyticsDropdown] = useState(false);
   const [selectedAnalyticsType, setSelectedAnalyticsType] = useState('heatmap');
@@ -91,21 +144,32 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-inter">
-      {/* Background gradient overlay with blur effect */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
+    <div className="min-h-screen font-inter relative overflow-hidden">
+      {/* Smooth background with multiple gradient layers for fluid effect */}
+      <div className={`fixed inset-0 ${backgroundClasses.base}`}></div>
+      <div className={`fixed inset-0 ${backgroundClasses.cross1}`}></div>
+      <div className={`fixed inset-0 ${backgroundClasses.cross2}`}></div>
+      {/* Subtle noise texture for more organic feel */}
+      <div className="fixed inset-0 opacity-5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]"></div>
+      </div>
       
       {/* Top Bar */}
       <header className="relative z-50 w-full backdrop-blur-xl bg-white/10 border-b border-white/20 shadow-xl">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-6 py-0">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl backdrop-blur-md bg-white/10 border border-white/20">
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-semibold text-white tracking-tight">
-              GlassView AI
-            </h1>
+          <div className="flex items-center">
+            <img 
+              src="/Spectra.png" 
+              alt="Spectra Logo" 
+              className="object-contain cursor-pointer transition-all duration-300 hover:scale-105"
+              style={{ 
+                width: '100px', 
+                height: '100px',
+                filter: 'brightness(0) invert(1)' 
+              }}
+              onClick={handleLogoClick}
+            />
           </div>
           
           {/* Action Buttons */}
