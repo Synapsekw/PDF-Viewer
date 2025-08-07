@@ -119,7 +119,8 @@ interface AnalyticsProviderProps {
  * @returns {JSX.Element} Provider component
  */
 export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }) => {
-  const { currentPage, totalPages, document: pdfDocument } = usePdf();
+  // Remove the usePdf dependency to avoid circular dependency
+  // const { currentPage, totalPages, document: pdfDocument } = usePdf();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(() => ({
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     startTime: Date.now(),
@@ -163,28 +164,28 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
     []
   );
 
-  // Update total pages when document loads
-  useEffect(() => {
-    if (totalPages > 0) {
-      setAnalyticsData(prev => ({
-        ...prev,
-        totalPages,
-        pdfFileName: pdfDocument ? 'uploaded_pdf.pdf' : undefined,
-        startTime: prev.startTime || Date.now(), // Ensure start time is set
-      }));
-      
-      console.debug('📊 Analytics auto-started - PDF loaded with', totalPages, 'pages');
-    }
-  }, [totalPages, pdfDocument]);
+  // Update total pages when document loads - removed PdfProvider dependency
+  // useEffect(() => {
+  //   if (totalPages > 0) {
+  //     setAnalyticsData(prev => ({
+  //       ...prev,
+  //       totalPages,
+  //       pdfFileName: pdfDocument ? 'uploaded_pdf.pdf' : undefined,
+  //       startTime: prev.startTime || Date.now(), // Ensure start time is set
+  //     }));
+  //     
+  //     console.debug('📊 Analytics auto-started - PDF loaded with', totalPages, 'pages');
+  //   }
+  // }, [totalPages, pdfDocument]);
 
 
 
-  // Track page views
-  useEffect(() => {
-    if (currentPage > 0) {
-      recordPageView(currentPage);
-    }
-  }, [currentPage]);
+  // Track page views - removed PdfProvider dependency
+  // useEffect(() => {
+  //   if (currentPage > 0) {
+  //     recordPageView(currentPage);
+  //   }
+  // }, [currentPage]);
 
   // Update session duration and handle persistence
   useEffect(() => {
@@ -301,7 +302,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
       const newInteraction: UserInteraction = {
         ...interaction,
         timestamp: Date.now(),
-        pageNumber: currentPage,
+        pageNumber: 1, // Default to page 1 since we removed PdfProvider dependency
       };
 
       // Use circular buffer for memory efficiency
@@ -345,29 +346,29 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
     } finally {
       endTiming();
     }
-  }, [currentPage, currentPageView, interactionBuffer, adaptiveSampler]);
+  }, [currentPageView, interactionBuffer, adaptiveSampler]);
 
   const updateHeatmapData = useCallback((data: Record<string, any>) => {
     // Use throttled update for performance
     throttledUpdateHeatmap(data);
   }, [throttledUpdateHeatmap]);
 
-  // Auto-start analytics tracking when document loads
-  useEffect(() => {
-    if (totalPages > 0) {
-      recordInteraction({
-        type: 'click',
-        details: { 
-          action: 'pdf_loaded', 
-          totalPages,
-          documentInfo: {
-            fileName: 'uploaded_pdf.pdf',
-            loadTime: Date.now(),
-          }
-        },
-      });
-    }
-  }, [totalPages]); // Removed recordInteraction from deps to prevent infinite loop
+  // Auto-start analytics tracking when document loads - removed PdfProvider dependency
+  // useEffect(() => {
+  //   if (totalPages > 0) {
+  //     recordInteraction({
+  //       type: 'click',
+  //       details: { 
+  //       action: 'pdf_loaded', 
+  //       totalPages,
+  //       documentInfo: {
+  //         fileName: 'uploaded_pdf.pdf',
+  //         loadTime: Date.now(),
+  //       }
+  //     },
+  //   });
+  // }
+  // }, [totalPages]); // Removed recordInteraction from deps to prevent infinite loop
 
   const getAnalyticsReport = (): AnalyticsData => {
     return {
@@ -404,6 +405,11 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
       const scrolls = pageInteractions.filter(i => i.type === 'scroll');
       const zooms = pageInteractions.filter(i => i.type === 'zoom');
       
+      // Create a more realistic PDF page visualization
+      const pageWidth = 595; // Standard A4 width in points
+      const pageHeight = 842; // Standard A4 height in points
+      const scale = 0.8; // Scale down for better fit
+      
       const interactionDots = pageInteractions
         .filter(interaction => interaction.details && 
                typeof interaction.details.x === 'number' && 
@@ -419,11 +425,15 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             case 'rotate': color = '#ff6b6b'; size = 12; break;
           }
           
-                      return `
+          // Scale coordinates to fit the visualization
+          const x = (interaction.details?.x || 0) * scale;
+          const y = (interaction.details?.y || 0) * scale;
+          
+          return `
             <div class="interaction-dot" 
                  style="position: absolute; 
-                        left: ${interaction.details?.x || 0}px; 
-                        top: ${interaction.details?.y || 0}px; 
+                        left: ${x}px; 
+                        top: ${y}px; 
                         width: ${size}px; 
                         height: ${size}px; 
                         background: ${color}; 
@@ -437,17 +447,20 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
 
       const heatmapVisualization = pageHeatmapData ? `
         <div class="heatmap-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.6; z-index: 5;">
-          ${pageHeatmapData.positions ? pageHeatmapData.positions.map((pos: any) => `
+          ${pageHeatmapData.positions ? pageHeatmapData.positions.map((pos: any) => {
+            const x = (pos.x || 0) * scale;
+            const y = (pos.y || 0) * scale;
+            return `
             <div style="position: absolute; 
-                        left: ${pos.x - 15}px; 
-                        top: ${pos.y - 15}px; 
+                        left: ${x - 15}px; 
+                        top: ${y - 15}px; 
                         width: 30px; 
                         height: 30px; 
                         background: radial-gradient(circle, rgba(255,107,107,0.6) 0%, rgba(255,107,107,0.1) 100%); 
                         border-radius: 50%; 
                         pointer-events: none;">
             </div>
-          `).join('') : ''}
+          `}).join('') : ''}
         </div>
       ` : '';
 
@@ -478,10 +491,15 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             </div>
           </div>
 
-          <div class="page-visualization" style="position: relative; width: 100%; min-height: 600px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; overflow: hidden;">
-            <div class="page-placeholder" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666;">
-              <h4>PDF Page ${pageNumber}</h4>
-              <p>Analytics Overlay Visualization</p>
+          <div class="page-visualization" style="position: relative; width: ${pageWidth * scale}px; height: ${pageHeight * scale}px; border: 2px solid #ddd; border-radius: 8px; background: white; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+            <!-- PDF Page Background -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%), linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f8f9fa 75%), linear-gradient(-45deg, transparent 75%, #f8f9fa 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; opacity: 0.3;"></div>
+            
+            <!-- Page Content Placeholder -->
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; z-index: 1;">
+              <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">📄</div>
+              <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">PDF Page ${pageNumber}</div>
+              <div style="font-size: 14px; color: #888;">Analytics Overlay</div>
             </div>
             
             ${heatmapVisualization}
@@ -520,38 +538,252 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Analytics Report - All Pages</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { background: #f4f4f4; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .section { margin-bottom: 30px; }
-        .metric { display: inline-block; margin: 10px; padding: 15px; background: #e9f5ff; border-radius: 5px; }
-        .metric-value { font-size: 24px; font-weight: bold; color: #0066cc; }
-        .metric-label { font-size: 14px; color: #666; }
-        .page-metric { display: inline-block; margin: 5px 10px; padding: 8px 12px; background: #f0f8ff; border-radius: 3px; font-size: 12px; }
-        .page-metric .label { color: #666; margin-right: 5px; }
-        .page-metric .value { font-weight: bold; color: #0066cc; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f2f2f2; font-weight: bold; }
-        .chart-placeholder { background: #f9f9f9; padding: 20px; text-align: center; border-radius: 5px; margin: 10px 0; }
-        .page-analytics { margin-bottom: 40px; }
-        .interaction-dot { transition: all 0.3s ease; }
-        .interaction-dot:hover { transform: scale(1.5); }
-        @media print { .page-analytics { page-break-inside: avoid; } }
-        .toc { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .toc ul { list-style: none; padding-left: 0; }
-        .toc li { margin: 5px 0; }
-        .toc a { text-decoration: none; color: #0066cc; }
-        .toc a:hover { text-decoration: underline; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            line-height: 1.6; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 5px 0;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section { 
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .section h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .metric { 
+            display: inline-block; 
+            margin: 10px; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric:hover {
+            transform: translateY(-2px);
+        }
+        
+        .metric-value { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label { 
+            font-size: 0.9rem; 
+            opacity: 0.9;
+        }
+        
+        .page-metric { 
+            display: inline-block; 
+            margin: 5px 10px; 
+            padding: 12px 16px; 
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px; 
+            font-size: 0.9rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .page-metric .label { 
+            color: #666; 
+            margin-right: 8px; 
+        }
+        
+        .page-metric .value { 
+            font-weight: 600; 
+            color: #667eea; 
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        th, td { 
+            padding: 15px; 
+            text-align: left; 
+            border-bottom: 1px solid #eee; 
+        }
+        
+        th { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .page-analytics { 
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .interaction-dot { 
+            transition: all 0.3s ease; 
+        }
+        
+        .interaction-dot:hover { 
+            transform: scale(1.5); 
+        }
+        
+        @media print { 
+            .page-analytics { page-break-inside: avoid; }
+            body { background: white; }
+            .container { box-shadow: none; }
+        }
+        
+        .toc { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 25px; 
+            border-radius: 15px; 
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toc ul { 
+            list-style: none; 
+            padding-left: 0; 
+        }
+        
+        .toc li { 
+            margin: 8px 0; 
+        }
+        
+        .toc a { 
+            text-decoration: none; 
+            color: #667eea;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .toc a:hover { 
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .insights-box {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(252, 182, 159, 0.3);
+        }
+        
+        .insights-box h4 {
+            color: #d97706;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .insights-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .insights-box li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .insights-box li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+        
+        footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        footer p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📊 PDF Analytics Report - All Pages</h1>
-        <p><strong>Session ID:</strong> ${report.sessionId}</p>
-        <p><strong>Generated:</strong> ${formatTime(Date.now())}</p>
-        <p><strong>Session Duration:</strong> ${formatDuration(report.totalDuration)}</p>
-        <p><strong>PDF File:</strong> ${report.pdfFileName || 'Unknown'}</p>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1>📊 PDF Analytics Report</h1>
+            <p><strong>Session ID:</strong> ${report.sessionId}</p>
+            <p><strong>Generated:</strong> ${formatTime(Date.now())}</p>
+            <p><strong>Session Duration:</strong> ${formatDuration(report.totalDuration)}</p>
+            <p><strong>PDF File:</strong> ${report.pdfFileName || 'Unknown'}</p>
+        </div>
+        
+        <div class="content">
 
     <div class="toc">
         <h3>📑 Table of Contents</h3>
@@ -667,7 +899,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             <p><strong>🔥 Heatmap Data:</strong> ${report.heatmapData ? Object.keys(report.heatmapData).length + ' pages tracked' : 'No heatmap data'}</p>
         </div>
         
-        <div style="margin-top: 20px; padding: 15px; background: #fff9e6; border-radius: 5px; border: 1px solid #ffd700;">
+        <div class="insights-box">
             <h4>💡 Reading Insights</h4>
             <ul>
                 ${report.pageViews.length > 0 ? `<li>You spent the most time on Page ${report.pageViews.reduce((max, pv) => pv.totalTime > max.totalTime ? pv : max).pageNumber}</li>` : ''}
@@ -677,8 +909,10 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             </ul>
         </div>
     </div>
+        </div>
+    </div>
 
-    <footer style="margin-top: 50px; padding: 20px; text-align: center; background: #f4f4f4; border-radius: 5px; color: #666;">
+    <footer>
         <p>Generated by PDF Viewer Analytics • ${formatTime(Date.now())}</p>
         <p>This report shows all your interactions with the PDF document, including mouse movements, clicks, scrolls, and time spent on each page.</p>
     </footer>

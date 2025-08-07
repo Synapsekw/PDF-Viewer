@@ -17,7 +17,7 @@ interface InteractionPoint {
 }
 
 const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
-  const { currentPage } = usePdf();
+  const { currentPage, document: pdfDocument } = usePdf();
   const { getAnalyticsReport } = useAnalytics();
   const [isLiveViewEnabled, setIsLiveViewEnabled] = useState(false);
   const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
@@ -31,6 +31,8 @@ const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, 
       const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
       const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
       
+      console.log('InteractionVisualizer: Checking settings:', { isEnabled, analyticsType });
+      
       // Only update state if values have actually changed
       setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
       setSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
@@ -43,7 +45,7 @@ const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, 
 
   // Render interaction points
   useEffect(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'interactions') {
+    if (!isLiveViewEnabled || selectedAnalyticsType !== 'interactions' || !pdfDocument) {
       return;
     }
 

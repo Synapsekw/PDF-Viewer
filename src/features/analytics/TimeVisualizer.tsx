@@ -21,7 +21,7 @@ interface TimeRegion {
 }
 
 const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
-  const { currentPage, scale, rotation } = usePdf();
+  const { currentPage, scale, rotation, document: pdfDocument } = usePdf();
   const { getAnalyticsReport, recordInteraction } = useAnalytics();
   const [isLiveViewEnabled, setIsLiveViewEnabled] = useState(false);
   const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
@@ -40,6 +40,8 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
       const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
       const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
       
+      console.log('TimeVisualizer: Checking settings:', { isEnabled, analyticsType });
+      
       // Only update state if values have actually changed
       setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
       setSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
@@ -56,7 +58,7 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
       const endTiming = performanceMonitor.startTiming('time_visualizer_mouse_move');
       
       try {
-        if (!canvasRef.current || !containerRef.current) return;
+        if (!canvasRef.current || !containerRef.current || !pdfDocument) return;
 
         const rect = canvasRef.current.getBoundingClientRect();
         const canvas = canvasRef.current;
@@ -406,9 +408,13 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
   }, []);
 
   // Only render if live view is enabled and page_time type is selected
-  if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time') {
+  console.log('TimeVisualizer render check:', { isLiveViewEnabled, selectedAnalyticsType, hasPdfDocument: !!pdfDocument });
+  if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time' || !pdfDocument) {
+    console.log('TimeVisualizer: Not rendering due to conditions not met');
     return null;
   }
+  
+  console.log('TimeVisualizer: Rendering component');
 
   return (
     <FeatureOverlay 

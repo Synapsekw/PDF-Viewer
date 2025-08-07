@@ -4,10 +4,9 @@ import { usePdf } from '../../pdf/PdfContext';
 
 interface ExportPanelProps {
   onClose: () => void;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
-export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose, canvasRef }) => {
+export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
   const { getAnalyticsReport, exportAsJSON, exportAsHTML } = useAnalytics();
   const { currentPage } = usePdf();
   const [exportFormat, setExportFormat] = useState<'json' | 'html'>('json');
@@ -15,10 +14,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose, canvasRef }) 
   const [isExporting, setIsExporting] = useState(false);
 
   const captureCanvasScreenshot = (): string | null => {
-    if (!canvasRef.current) return null;
+    // Try to find the PDF canvas in the DOM
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return null;
     
     try {
-      return canvasRef.current.toDataURL('image/png');
+      return canvas.toDataURL('image/png');
     } catch (error) {
       console.error('Failed to capture canvas screenshot:', error);
       return null;
@@ -50,7 +51,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose, canvasRef }) 
         if (includeScreenshot) {
           const screenshot = captureCanvasScreenshot();
           if (screenshot) {
-            exportData = {
+            const exportDataWithScreenshot = {
               ...exportData,
               currentPageScreenshot: {
                 pageNumber: currentPage,
@@ -58,11 +59,16 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose, canvasRef }) 
                 timestamp: Date.now(),
               }
             };
+            const jsonContent = JSON.stringify(exportDataWithScreenshot, null, 2);
+            downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
+          } else {
+            const jsonContent = JSON.stringify(exportData, null, 2);
+            downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
           }
+        } else {
+          const jsonContent = JSON.stringify(exportData, null, 2);
+          downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
         }
-        
-        const jsonContent = JSON.stringify(exportData, null, 2);
-        downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
       } else if (exportFormat === 'html') {
         let htmlContent = exportAsHTML();
         
@@ -214,8 +220,181 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose, canvasRef }) 
           </button>
         </div>
       </div>
-
-
+      
+      <style>{`
+        .export-panel {
+          padding: 24px;
+          background: white;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 600px;
+        }
+        
+        .export-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        
+        .export-header h2 {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1a1a1a;
+          margin: 0;
+        }
+        
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 24px;
+          color: #666;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        
+        .close-button:hover {
+          background: #f0f0f0;
+          color: #333;
+        }
+        
+        .export-preview {
+          background: #f7f9fc;
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+        }
+        
+        .export-preview h3 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #333;
+          margin: 0 0 16px 0;
+        }
+        
+        .preview-stats {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        
+        .stat-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stat-label {
+          color: #666;
+          font-size: 14px;
+        }
+        
+        .stat-value {
+          color: #333;
+          font-weight: 600;
+          font-size: 14px;
+        }
+        
+        .export-options h3 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #333;
+          margin: 0 0 16px 0;
+        }
+        
+        .option-group {
+          margin-bottom: 20px;
+        }
+        
+        .option-group > label {
+          display: block;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 8px;
+        }
+        
+        .radio-group {
+          display: flex;
+          gap: 24px;
+        }
+        
+        .radio-group label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          color: #666;
+        }
+        
+        .radio-group input[type="radio"] {
+          cursor: pointer;
+        }
+        
+        .option-group input[type="checkbox"] {
+          margin-right: 8px;
+          cursor: pointer;
+        }
+        
+        .format-description {
+          background: #f0f4f8;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 24px;
+        }
+        
+        .format-description p {
+          margin: 0;
+          font-size: 14px;
+          color: #666;
+          line-height: 1.5;
+        }
+        
+        .export-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+        }
+        
+        .export-button {
+          padding: 10px 24px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 500;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .export-button.primary {
+          background: #2563eb;
+          color: white;
+        }
+        
+        .export-button.primary:hover:not(:disabled) {
+          background: #1d4ed8;
+        }
+        
+        .export-button.primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .export-button.secondary {
+          background: #e5e7eb;
+          color: #374151;
+        }
+        
+        .export-button.secondary:hover {
+          background: #d1d5db;
+        }
+      `}</style>
     </div>
   );
 };
