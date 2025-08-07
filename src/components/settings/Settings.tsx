@@ -4,6 +4,49 @@ import { Button, Card } from '../ui';
 import theme from '../../theme';
 import { useTheme } from '../../theme/ThemeProvider';
 
+// Color theme preview components
+const ColorThemePreview = styled.div<{ theme: string }>`
+  height: 60px;
+  width: 100%;
+  border-radius: ${theme.borderRadius.md};
+  position: relative;
+  overflow: hidden;
+  
+  ${props => {
+    const getGradient = (themeName: string) => {
+      switch (themeName) {
+        case 'slate':
+          return 'linear-gradient(135deg, #020617, #1e293b, #475569, #1e293b, #020617)';
+        case 'green':
+          return 'linear-gradient(135deg, #022c22, #065f46, #059669, #065f46, #022c22)';
+        case 'blue':
+          return 'linear-gradient(135deg, #172554, #1e40af, #2563eb, #1e40af, #172554)';
+        case 'purple':
+          return 'linear-gradient(135deg, #2e1065, #7c3aed, #a855f7, #7c3aed, #2e1065)';
+        case 'pink':
+          return 'linear-gradient(135deg, #500724, #be185d, #ec4899, #be185d, #500724)';
+        case 'yellow':
+          return 'linear-gradient(135deg, #451a03, #92400e, #d97706, #92400e, #451a03)';
+        default:
+          return 'linear-gradient(135deg, #020617, #1e293b, #475569, #1e293b, #020617)';
+      }
+    };
+    
+    return `
+      background: ${getGradient(props.theme)};
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      }
+    `;
+  }}
+`;
+
 const SettingsContainer = styled.div`
   padding: ${theme.spacing[4]};
 `;
@@ -101,10 +144,14 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
-  const { backgroundVariant, setBackgroundVariant } = useTheme();
+  const { backgroundVariant, setBackgroundVariant, colorTheme, setColorTheme } = useTheme();
   
   const handleBackgroundChange = (variant: 'default' | 'gradient1' | 'gradient2' | 'solid') => {
     setBackgroundVariant(variant);
+  };
+
+  const handleColorThemeChange = (theme: 'slate' | 'green' | 'blue' | 'purple' | 'pink' | 'yellow') => {
+    setColorTheme(theme);
   };
   
   return (
@@ -115,7 +162,23 @@ export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       </SettingsHeader>
       
       <Section>
-        <SectionTitle>Background</SectionTitle>
+        <SectionTitle>Color Theme</SectionTitle>
+        <OptionGrid>
+          {(['slate', 'green', 'blue', 'purple', 'pink', 'yellow'] as const).map((theme) => (
+            <BackgroundOption 
+              key={theme}
+              isSelected={colorTheme === theme}
+              onClick={() => handleColorThemeChange(theme)}
+            >
+              <ColorThemePreview theme={theme} />
+              <OptionLabel style={{ textTransform: 'capitalize' }}>{theme}</OptionLabel>
+            </BackgroundOption>
+          ))}
+        </OptionGrid>
+      </Section>
+      
+      <Section>
+        <SectionTitle>Background Style</SectionTitle>
         <OptionGrid>
           <BackgroundOption 
             isSelected={backgroundVariant === 'default'}
