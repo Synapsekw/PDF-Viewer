@@ -6,9 +6,10 @@ import { PdfFeatureProps } from '../../pdf/types';
 
 interface PDFViewerWithFeaturesProps {
   onToggleOutline?: () => void;
+  onFileUpload?: (file: File) => void;
 }
 
-export const PDFViewerWithFeatures: React.FC<PDFViewerWithFeaturesProps> = ({ onToggleOutline }) => {
+export const PDFViewerWithFeatures: React.FC<PDFViewerWithFeaturesProps> = ({ onToggleOutline, onFileUpload }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +32,7 @@ export const PDFViewerWithFeatures: React.FC<PDFViewerWithFeaturesProps> = ({ on
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <PDFViewer onToggleOutline={onToggleOutline} canvasRef={canvasRef} />
+      <PDFViewer onToggleOutline={onToggleOutline} canvasRef={canvasRef} onFileUpload={onFileUpload} />
       
       {/* Render all registered features */}
       {FeatureRegistry.getAllFeatures().map((feature) => {

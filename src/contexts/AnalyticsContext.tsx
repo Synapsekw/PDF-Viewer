@@ -596,7 +596,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             font-weight: 600;
             color: #333;
             margin-bottom: 20px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #64748b;
             padding-bottom: 10px;
         }
         
@@ -604,10 +604,10 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             display: inline-block; 
             margin: 10px; 
             padding: 20px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #334155 0%, #475569 25%, #64748b 50%, #94a3b8 75%, #cbd5e1 100%);
             color: white;
             border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 16px rgba(51, 65, 85, 0.3);
             transition: transform 0.3s ease;
         }
         
@@ -631,10 +631,10 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
             display: inline-block; 
             margin: 5px 10px; 
             padding: 12px 16px; 
-            background: rgba(102, 126, 234, 0.1);
+            background: rgba(71, 85, 105, 0.1);
             border-radius: 10px; 
             font-size: 0.9rem;
-            border: 1px solid rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(71, 85, 105, 0.2);
         }
         
         .page-metric .label { 
@@ -644,7 +644,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
         
         .page-metric .value { 
             font-weight: 600; 
-            color: #667eea; 
+            color: #64748b; 
         }
         
         table { 
@@ -664,13 +664,13 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
         }
         
         th { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #334155 0%, #475569 25%, #64748b 50%, #94a3b8 75%, #cbd5e1 100%);
             color: white;
             font-weight: 600;
         }
         
         tr:hover {
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(71, 85, 105, 0.05);
         }
         
         .page-analytics { 
@@ -715,7 +715,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
         
         .toc a { 
             text-decoration: none; 
-            color: #667eea;
+            color: #64748b;
             font-weight: 500;
             padding: 8px 12px;
             border-radius: 8px;
@@ -724,7 +724,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
         }
         
         .toc a:hover { 
-            background: rgba(102, 126, 234, 0.1);
+            background: rgba(71, 85, 105, 0.1);
             transform: translateX(5px);
         }
         
@@ -760,7 +760,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
         }
         
         footer {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
             color: white;
             padding: 30px;
             text-align: center;

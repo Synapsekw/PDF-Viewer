@@ -2,7 +2,7 @@ import React, { InputHTMLAttributes } from 'react';
 import styled from '@emotion/styled';
 import theme from '../../theme';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;

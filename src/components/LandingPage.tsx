@@ -5,8 +5,8 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogoClick = () => {
-    console.log('Logo clicked, navigating to /app');
-    navigate('/app');
+    console.log('Logo clicked, navigating to /auth');
+    navigate('/auth');
   };
 
   return (

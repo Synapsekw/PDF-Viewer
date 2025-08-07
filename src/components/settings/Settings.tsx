@@ -116,6 +116,10 @@ const BackgroundPreview = styled.div<{ variant: string }>`
         return `
           background-color: ${theme.colors.background.primary};
         `;
+      case 'landing':
+        return `
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        `;
       case 'default':
       default:
         return `
@@ -146,7 +150,7 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const { backgroundVariant, setBackgroundVariant, colorTheme, setColorTheme } = useTheme();
   
-  const handleBackgroundChange = (variant: 'default' | 'gradient1' | 'gradient2' | 'solid') => {
+  const handleBackgroundChange = (variant: 'default' | 'gradient1' | 'gradient2' | 'solid' | 'landing') => {
     setBackgroundVariant(variant);
   };
 
@@ -210,6 +214,14 @@ export const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           >
             <BackgroundPreview variant="solid" />
             <OptionLabel>Solid</OptionLabel>
+          </BackgroundOption>
+          
+          <BackgroundOption 
+            isSelected={backgroundVariant === 'landing'}
+            onClick={() => handleBackgroundChange('landing')}
+          >
+            <BackgroundPreview variant="landing" />
+            <OptionLabel>Landing Page</OptionLabel>
           </BackgroundOption>
         </OptionGrid>
       </Section>

@@ -126,10 +126,11 @@ const IconWrapper = styled.div`
 
 interface PDFViewerProps {
   onToggleOutline?: () => void;
-  canvasRef?: React.RefObject<HTMLCanvasElement>;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  onFileUpload?: (file: File) => void;
 }
 
-export const PDFViewer: React.FC<PDFViewerProps> = ({ onToggleOutline, canvasRef: externalCanvasRef }) => {
+export const PDFViewer: React.FC<PDFViewerProps> = ({ onToggleOutline, canvasRef: externalCanvasRef, onFileUpload }) => {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = externalCanvasRef || internalCanvasRef;
   const { currentPage, totalPages, setCurrentPage, scale, setScale, document } = usePdf();
@@ -206,7 +207,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ onToggleOutline, canvasRef
           justifyContent: 'center',
           zIndex: 10
         }}>
-          <WelcomeMessage />
+          <WelcomeMessage onFileUpload={onFileUpload} />
         </div>
       )}
       
