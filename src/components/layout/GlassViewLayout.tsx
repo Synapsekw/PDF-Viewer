@@ -48,46 +48,46 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
   onExportAnalytics
 }) => {
   const navigate = useNavigate();
-  const { colorTheme } = useTheme();
+  const { colorTheme, backgroundVariant } = useTheme();
 
-  // Color theme configurations with enhanced gradients
+  // Color theme configurations with smoother gradients
   const getBackgroundClasses = () => {
     switch (colorTheme) {
       case 'green':
         return {
-          base: 'bg-gradient-to-br from-emerald-950 via-emerald-800 via-emerald-600 to-emerald-950',
-          cross1: 'bg-gradient-to-tr from-emerald-700/40 via-emerald-500/20 via-transparent to-emerald-800/40',
-          cross2: 'bg-gradient-to-bl from-emerald-950/30 via-transparent via-emerald-600/20 to-emerald-700/30'
+          base: 'bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950',
+          cross1: 'bg-gradient-to-tr from-emerald-800/30 via-emerald-600/15 via-transparent to-emerald-800/30',
+          cross2: 'bg-gradient-to-bl from-emerald-950/20 via-transparent via-emerald-700/10 to-emerald-800/20'
         };
       case 'blue':
         return {
-          base: 'bg-gradient-to-br from-blue-950 via-blue-800 via-blue-600 to-blue-950',
-          cross1: 'bg-gradient-to-tr from-blue-700/40 via-blue-500/20 via-transparent to-blue-800/40',
-          cross2: 'bg-gradient-to-bl from-blue-950/30 via-transparent via-blue-600/20 to-blue-700/30'
+          base: 'bg-gradient-to-br from-blue-950 via-blue-900 to-blue-950',
+          cross1: 'bg-gradient-to-tr from-blue-800/30 via-blue-600/15 via-transparent to-blue-800/30',
+          cross2: 'bg-gradient-to-bl from-blue-950/20 via-transparent via-blue-700/10 to-blue-800/20'
         };
       case 'purple':
         return {
-          base: 'bg-gradient-to-br from-purple-950 via-purple-800 via-purple-600 to-purple-950',
-          cross1: 'bg-gradient-to-tr from-purple-700/40 via-purple-500/20 via-transparent to-purple-800/40',
-          cross2: 'bg-gradient-to-bl from-purple-950/30 via-transparent via-purple-600/20 to-purple-700/30'
+          base: 'bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950',
+          cross1: 'bg-gradient-to-tr from-purple-800/30 via-purple-600/15 via-transparent to-purple-800/30',
+          cross2: 'bg-gradient-to-bl from-purple-950/20 via-transparent via-purple-700/10 to-purple-800/20'
         };
       case 'pink':
         return {
-          base: 'bg-gradient-to-br from-pink-950 via-pink-800 via-pink-600 to-pink-950',
-          cross1: 'bg-gradient-to-tr from-pink-700/40 via-pink-500/20 via-transparent to-pink-800/40',
-          cross2: 'bg-gradient-to-bl from-pink-950/30 via-transparent via-pink-600/20 to-pink-700/30'
+          base: 'bg-gradient-to-br from-pink-950 via-pink-900 to-pink-950',
+          cross1: 'bg-gradient-to-tr from-pink-800/30 via-pink-600/15 via-transparent to-pink-800/30',
+          cross2: 'bg-gradient-to-bl from-pink-950/20 via-transparent via-pink-700/10 to-pink-800/20'
         };
       case 'yellow':
         return {
-          base: 'bg-gradient-to-br from-amber-950 via-amber-800 via-amber-600 to-amber-950',
-          cross1: 'bg-gradient-to-tr from-amber-700/40 via-amber-500/20 via-transparent to-amber-800/40',
-          cross2: 'bg-gradient-to-bl from-amber-950/30 via-transparent via-amber-600/20 to-amber-700/30'
+          base: 'bg-gradient-to-br from-amber-950 via-amber-900 to-amber-950',
+          cross1: 'bg-gradient-to-tr from-amber-800/30 via-amber-600/15 via-transparent to-amber-800/30',
+          cross2: 'bg-gradient-to-bl from-amber-950/20 via-transparent via-amber-700/10 to-amber-800/20'
         };
       default: // slate
         return {
-          base: 'bg-gradient-to-br from-slate-950 via-slate-800 via-slate-600 to-slate-950',
-          cross1: 'bg-gradient-to-tr from-slate-700/40 via-slate-500/20 via-transparent to-slate-800/40',
-          cross2: 'bg-gradient-to-bl from-slate-950/30 via-transparent via-slate-600/20 to-slate-700/30'
+          base: 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
+          cross1: 'bg-gradient-to-tr from-slate-800/30 via-slate-600/15 via-transparent to-slate-800/30',
+          cross2: 'bg-gradient-to-bl from-slate-950/20 via-transparent via-slate-700/10 to-slate-800/20'
         };
     }
   };
@@ -145,17 +145,24 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
   return (
     <div className="min-h-screen font-inter relative overflow-hidden">
-      {/* Smooth background with multiple gradient layers for fluid effect */}
-      <div className={`fixed inset-0 ${backgroundClasses.base}`}></div>
-      <div className={`fixed inset-0 ${backgroundClasses.cross1}`}></div>
-      <div className={`fixed inset-0 ${backgroundClasses.cross2}`}></div>
-      {/* Subtle noise texture for more organic feel */}
-      <div className="fixed inset-0 opacity-5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]"></div>
-      </div>
+      {/* Background based on variant */}
+      {backgroundVariant === 'landing' ? (
+        <>
+          {/* Landing page background - pixel perfect match */}
+          <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+          <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
+        </>
+      ) : (
+        <>
+          {/* Smooth background with multiple gradient layers for fluid effect */}
+          <div className={`fixed inset-0 ${backgroundClasses.base}`}></div>
+          <div className={`fixed inset-0 ${backgroundClasses.cross1}`}></div>
+          <div className={`fixed inset-0 ${backgroundClasses.cross2}`}></div>
+        </>
+      )}
       
       {/* Top Bar */}
-      <header className="relative z-50 w-full backdrop-blur-xl bg-white/10 border-b border-white/20 shadow-xl">
+      <header className="relative z-50 w-full backdrop-blur-2xl bg-white/8 border-b border-white/15 shadow-2xl">
         <div className="flex items-center justify-between px-6 py-0">
           {/* Logo */}
           <div className="flex items-center">
@@ -184,7 +191,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 rounded-xl backdrop-blur-md bg-white/5 border border-white/20 hover:bg-white/10 transition-all duration-200 group"
+              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
               title="Upload PDF"
             >
               <Upload className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -193,7 +200,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             <button
               onClick={onDownload}
               disabled={false}
-              className="p-3 rounded-xl backdrop-blur-md bg-white/5 border border-white/20 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group"
+              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 group"
               title="Download PDF"
             >
               <Download className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -208,8 +215,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
                     setShowAnalyticsDropdown(!showAnalyticsDropdown);
                   }
                 }}
-                className={`p-3 rounded-xl backdrop-blur-md border border-white/20 transition-all duration-200 group ${
-                  isAnalyticsEnabled ? 'bg-blue-500/20 hover:bg-blue-500/30' : 'bg-white/5 hover:bg-white/10'
+                className={`p-3 rounded-xl backdrop-blur-2xl border border-white/15 transition-all duration-300 group ${
+                  isAnalyticsEnabled ? 'bg-blue-500/25 hover:bg-blue-500/35' : 'bg-white/6 hover:bg-white/12 hover:border-white/25'
                 }`}
                 title={isAnalyticsEnabled ? "Disable Analytics" : "Select Analytics Type"}
               >
@@ -218,7 +225,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
               
               {/* Analytics Type Dropdown */}
               {showAnalyticsDropdown && !isAnalyticsEnabled && (
-                <div className="absolute top-full right-0 mt-2 w-48 backdrop-blur-2xl bg-white/20 border border-white/30 rounded-xl shadow-2xl z-50">
+                <div className="absolute top-full right-0 mt-2 w-48 backdrop-blur-3xl bg-white/12 border border-white/20 rounded-xl shadow-2xl z-50">
                   <div className="p-2">
                     <div className="text-xs text-white/80 px-3 py-1 mb-2 font-medium">Select Analytics Type</div>
                     {[
@@ -272,7 +279,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={onExportAnalytics}
-              className="p-3 rounded-xl backdrop-blur-md bg-white/5 border border-white/20 hover:bg-white/10 transition-all duration-200 group"
+              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
               title="Export Analytics"
             >
               <FileDown className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -280,7 +287,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={onOpenSettings}
-              className="p-3 rounded-xl backdrop-blur-md bg-white/5 border border-white/20 hover:bg-white/10 transition-all duration-200 group"
+              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
               title="Settings"
             >
               <Settings className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -293,7 +300,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
       <div className="relative z-10 flex h-[calc(100vh-80px)] p-6 space-x-6">
         {/* Left Panel - PDF Viewer (70%) */}
         <div className="flex-1 w-[70%] relative">
-          <div className="h-full backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-xl">
+          <div className="h-full backdrop-blur-2xl bg-white/8 border border-white/15 rounded-2xl shadow-2xl">
             {/* PDF Viewer Content */}
             <div className="w-full h-full">
               {/* PDFViewer handles its own welcome/content states and styling */}
@@ -304,11 +311,11 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
         {/* Right Panel - AI Assistant (30%) */}
         <div className="w-[30%] flex flex-col">
-          <div className="h-full backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-xl overflow-hidden">
+          <div className="h-full backdrop-blur-2xl bg-white/8 border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
             {/* AI Assistant Header */}
-            <div className="p-6 border-b border-white/20">
+            <div className="p-6 border-b border-white/15">
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg backdrop-blur-md bg-white/10 border border-white/20">
+                <div className="p-2 rounded-lg backdrop-blur-2xl bg-white/8 border border-white/15">
                   <Menu className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-semibold text-white">AI Assistant</h2>
@@ -325,8 +332,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
                   <div
                     className={`max-w-[85%] p-4 rounded-2xl text-white text-sm leading-relaxed ${
                       message.isUser
-                        ? 'bg-blue-500/80 backdrop-blur-md rounded-br-md'
-                        : 'backdrop-blur-xl bg-white/10 border border-white/20 rounded-bl-md'
+                        ? 'bg-blue-500/70 backdrop-blur-2xl rounded-br-md'
+                        : 'backdrop-blur-2xl bg-white/8 border border-white/15 rounded-bl-md'
                     }`}
                   >
                     {message.text}
@@ -336,8 +343,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-white/20">
-              <div className="flex items-center space-x-3 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full p-2">
+            <div className="p-6 border-t border-white/15">
+              <div className="flex items-center space-x-3 backdrop-blur-2xl bg-white/8 border border-white/15 rounded-full p-2">
                 <input
                   type="text"
                   placeholder="Ask anything about this PDF..."
@@ -349,7 +356,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim()}
-                  className="p-2 rounded-full bg-blue-500/80 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group"
+                  className="p-2 rounded-full bg-blue-500/70 hover:bg-blue-500/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 group"
                 >
                   <Send className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
                 </button>

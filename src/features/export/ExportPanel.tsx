@@ -13,6 +13,18 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
   const [includeScreenshot, setIncludeScreenshot] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Debug: Log when component mounts
+  React.useEffect(() => {
+    console.log('ExportPanel: Component mounted');
+    const report = getAnalyticsReport();
+    console.log('ExportPanel: Analytics data available:', {
+      pageViews: report.pageViews.length,
+      interactions: report.interactions.length,
+      totalDuration: report.totalDuration,
+      currentPage
+    });
+  }, [getAnalyticsReport, currentPage]);
+
   const captureCanvasScreenshot = (): string | null => {
     // Try to find the PDF canvas in the DOM
     const canvas = document.querySelector('canvas');
@@ -27,30 +39,43 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
   };
 
   const downloadFile = (content: string, filename: string, contentType: string) => {
-    const blob = new Blob([content], { type: contentType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    console.log('ExportPanel: Downloading file:', filename, 'size:', content.length, 'type:', contentType);
+    
+    try {
+      const blob = new Blob([content], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('ExportPanel: File download initiated successfully');
+    } catch (error) {
+      console.error('ExportPanel: File download failed:', error);
+      throw error;
+    }
   };
 
   const handleExport = async () => {
+    console.log('ExportPanel: Export button clicked');
     setIsExporting(true);
     
     try {
       const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      console.log('ExportPanel: Starting export with format:', exportFormat);
       
       if (exportFormat === 'json') {
         let exportData = getAnalyticsReport();
+        console.log('ExportPanel: Got analytics report:', exportData);
         
         // Add screenshot if requested
         if (includeScreenshot) {
           const screenshot = captureCanvasScreenshot();
           if (screenshot) {
+            console.log('ExportPanel: Screenshot captured, size:', screenshot.length);
             const exportDataWithScreenshot = {
               ...exportData,
               currentPageScreenshot: {
@@ -62,6 +87,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
             const jsonContent = JSON.stringify(exportDataWithScreenshot, null, 2);
             downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
           } else {
+            console.log('ExportPanel: No screenshot available');
             const jsonContent = JSON.stringify(exportData, null, 2);
             downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
           }
@@ -70,12 +96,14 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
           downloadFile(jsonContent, `pdf-analytics-${timestamp}.json`, 'application/json');
         }
       } else if (exportFormat === 'html') {
+        console.log('ExportPanel: Generating HTML report');
         let htmlContent = exportAsHTML();
         
         // Add screenshot to HTML if requested
         if (includeScreenshot) {
           const screenshot = captureCanvasScreenshot();
           if (screenshot) {
+            console.log('ExportPanel: Adding screenshot to HTML report');
             const screenshotSection = `
     <div class="section">
         <h2>Current Page Screenshot</h2>
@@ -93,9 +121,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         downloadFile(htmlContent, `pdf-analytics-report-${timestamp}.html`, 'text/html');
       }
       
+      console.log('ExportPanel: Export completed successfully');
       onClose();
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('ExportPanel: Export failed:', error);
       alert('Export failed. Please try again.');
     } finally {
       setIsExporting(false);

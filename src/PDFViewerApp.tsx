@@ -69,16 +69,21 @@ const PDFViewerAppContent: React.FC = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const handleExportAnalytics = () => {
+    console.log('PDFViewerAppContent: Export analytics button clicked');
+    setShowExport(true);
+  };
+
   return (
     <div className="app-container">
       <GlassViewLayout
         onFileUpload={handleFileUpload}
         onOpenSettings={() => setShowSettings(true)}
-        onExportAnalytics={() => setShowExport(true)}
+        onExportAnalytics={handleExportAnalytics}
         onToggleAnalytics={handleAnalyticsButtonClick}
         isAnalyticsEnabled={showAnalyticsDropdown}
       >
-        <PDFViewerWithFeatures />
+        <PDFViewerWithFeatures onFileUpload={handleFileUpload} />
       </GlassViewLayout>
 
       {showSettings && (
@@ -86,7 +91,21 @@ const PDFViewerAppContent: React.FC = () => {
       )}
 
       {showExport && (
-        <ExportPanel onClose={() => setShowExport(false)} />
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(8px)'
+        }}>
+          <ExportPanel onClose={() => setShowExport(false)} />
+        </div>
       )}
     </div>
   );

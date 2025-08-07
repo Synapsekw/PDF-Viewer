@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import styled from '@emotion/styled';
 import { FiUpload } from 'react-icons/fi';
 
@@ -13,13 +13,14 @@ const WelcomeContainer = styled.div`
 `;
 
 const WelcomeContent = styled.div`
-  backdrop-blur-xl;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-blur-2xl;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 1rem;
   padding: 2rem;
   max-width: 300px;
   text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 `;
 
 const IconWrapper = styled.div`
@@ -53,12 +54,42 @@ const UploadHint = styled.div`
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+  }
 `;
 
-export const WelcomeMessage: React.FC = () => {
+const HiddenFileInput = styled.input`
+  display: none;
+`;
+
+interface WelcomeMessageProps {
+  onFileUpload?: (file: File) => void;
+}
+
+export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onFileUpload }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onFileUpload) {
+      onFileUpload(file);
+    }
+  };
+
   return (
     <WelcomeContainer>
       <WelcomeContent>
@@ -69,10 +100,16 @@ export const WelcomeMessage: React.FC = () => {
         <Description>
           Select a PDF file to begin viewing and analyzing with AI assistance
         </Description>
-        <UploadHint>
+        <UploadHint onClick={handleUploadClick}>
           <FiUpload size={12} />
-          Click the upload button above
+          Click here to upload a PDF
         </UploadHint>
+        <HiddenFileInput
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf"
+          onChange={handleFileChange}
+        />
       </WelcomeContent>
     </WelcomeContainer>
   );

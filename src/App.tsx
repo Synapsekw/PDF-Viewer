@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import PDFViewerApp from './PDFViewerApp';
+import { AuthPage } from './components/auth';
 
 const App: React.FC = () => {
   console.log('App component rendering');
@@ -10,6 +11,7 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route path="/app" element={<PDFViewerApp />} />
         <Route path="/test" element={<div style={{padding: '20px', background: 'green', color: 'white'}}>Test Route Working!</div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
