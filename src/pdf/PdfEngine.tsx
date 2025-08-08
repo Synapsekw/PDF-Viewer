@@ -62,12 +62,23 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
   
   // Computed viewport for current page to size the wrapper
   const currentViewport = useMemo(() => {
-    if (!currentPageObj) return null;
+    if (!currentPageObj) {
+      console.log('[PdfEngine] currentViewport: no currentPageObj');
+      return null;
+    }
     const effectiveScale = scale || 1;
     const effectiveRotation = rotation || 0;
     try {
-      return currentPageObj.getViewport({ scale: effectiveScale, rotation: effectiveRotation });
-    } catch {
+      const viewport = currentPageObj.getViewport({ scale: effectiveScale, rotation: effectiveRotation });
+      console.log('[PdfEngine] currentViewport calculated:', {
+        width: viewport.width,
+        height: viewport.height,
+        scale: effectiveScale,
+        rotation: effectiveRotation
+      });
+      return viewport;
+    } catch (error) {
+      console.error('[PdfEngine] currentViewport error:', error);
       return null;
     }
   }, [currentPageObj, scale, rotation]);
@@ -160,10 +171,17 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
       // Load new page
       const newPage = await pdfDocument.getPage(pageNum);
+      console.log('[PdfEngine] Setting currentPageObj:', !!newPage);
       setCurrentPageObj(newPage);
 
       // Calculate viewport
       const viewport = newPage.getViewport({ scale: pageScale, rotation: pageRotation });
+      console.log('[PdfEngine] Calculated viewport:', {
+        width: viewport.width,
+        height: viewport.height,
+        scale: pageScale,
+        rotation: pageRotation
+      });
 
       // Set canvas dimensions
       const canvas = canvasRef.current;
@@ -262,6 +280,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.drawImage(offscreenCanvas, 0, 0);
       console.log('PdfEngine: Page rendered successfully');
+      console.log('[PdfEngine] After render - currentPageObj:', !!currentPageObj, 'currentViewport:', !!currentViewport);
       
       // Debug: Check if canvas has content
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
