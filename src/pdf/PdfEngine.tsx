@@ -298,28 +298,34 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     return () => clearTimeout(timeoutId);
   }, [pdfDocument, currentPage, scale, rotation]);
 
-  // Debug logging for TextLayer rendering
-  // eslint-disable-next-line no-console
-  console.log('[PdfEngine] Render state:', {
-    currentPageObj: !!currentPageObj,
-    currentViewport: !!currentViewport,
-    currentPage,
-    scale,
-    rotation
-  })
-
-  // Check if TextLayer should be rendered
-  const shouldRenderTextLayer = currentPageObj && currentViewport
-  if (!shouldRenderTextLayer) {
+  // Debug logging for TextLayer rendering - use useEffect to track state changes
+  useEffect(() => {
     // eslint-disable-next-line no-console
-    console.log('[PdfEngine] TextLayer not rendered because:', {
+    console.log('[PdfEngine] State changed:', {
       currentPageObj: !!currentPageObj,
       currentViewport: !!currentViewport,
       currentPage,
       scale,
       rotation
     })
-  }
+
+    const shouldRenderTextLayer = currentPageObj && currentViewport
+    if (!shouldRenderTextLayer) {
+      // eslint-disable-next-line no-console
+      console.log('[PdfEngine] TextLayer not rendered because:', {
+        currentPageObj: !!currentPageObj,
+        currentViewport: !!currentViewport,
+        currentPage,
+        scale,
+        rotation
+      })
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('[PdfEngine] TextLayer should be rendered')
+    }
+  }, [currentPageObj, currentViewport, currentPage, scale, rotation])
+
+  const shouldRenderTextLayer = currentPageObj && currentViewport
 
   return (
     <div
