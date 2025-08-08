@@ -253,10 +253,14 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
       <style>{`
         .export-panel {
           padding: 24px;
-          background: white;
+          background: rgba(35, 47, 61, 0.6);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 16px;
           width: 100%;
           max-width: 600px;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         
         .export-header {
@@ -269,7 +273,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         .export-header h2 {
           font-size: 24px;
           font-weight: 600;
-          color: #1a1a1a;
+          color: #ffffff;
           margin: 0;
         }
         
@@ -277,7 +281,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
           background: none;
           border: none;
           font-size: 24px;
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           cursor: pointer;
           width: 32px;
           height: 32px;
@@ -289,21 +293,22 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         }
         
         .close-button:hover {
-          background: #f0f0f0;
-          color: #333;
+          background: rgba(255, 255, 255, 0.1);
+          color: #ffffff;
         }
         
         .export-preview {
-          background: #f7f9fc;
+          background: rgba(255, 255, 255, 0.05);
           padding: 20px;
           border-radius: 12px;
           margin-bottom: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .export-preview h3 {
           font-size: 18px;
           font-weight: 600;
-          color: #333;
+          color: #ffffff;
           margin: 0 0 16px 0;
         }
         
@@ -317,16 +322,16 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
           display: flex;
           justify-content: space-between;
           padding: 8px 0;
-          border-bottom: 1px solid #e0e0e0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .stat-label {
-          color: #666;
+          color: rgba(255, 255, 255, 0.7);
           font-size: 14px;
         }
         
         .stat-value {
-          color: #333;
+          color: #ffffff;
           font-weight: 600;
           font-size: 14px;
         }
@@ -334,7 +339,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         .export-options h3 {
           font-size: 18px;
           font-weight: 600;
-          color: #333;
+          color: #ffffff;
           margin: 0 0 16px 0;
         }
         
@@ -345,7 +350,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         .option-group > label {
           display: block;
           font-weight: 500;
-          color: #333;
+          color: #ffffff;
           margin-bottom: 8px;
         }
         
@@ -359,7 +364,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
           align-items: center;
           gap: 8px;
           cursor: pointer;
-          color: #666;
+          color: rgba(255, 255, 255, 0.8);
         }
         
         .radio-group input[type="radio"] {
@@ -372,16 +377,17 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         }
         
         .format-description {
-          background: #f0f4f8;
+          background: rgba(255, 255, 255, 0.05);
           padding: 12px;
           border-radius: 8px;
           margin-bottom: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .format-description p {
           margin: 0;
           font-size: 14px;
-          color: #666;
+          color: rgba(255, 255, 255, 0.8);
           line-height: 1.5;
         }
         
@@ -416,12 +422,13 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         }
         
         .export-button.secondary {
-          background: #e5e7eb;
-          color: #374151;
+          background: rgba(255, 255, 255, 0.1);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .export-button.secondary:hover {
-          background: #d1d5db;
+          background: rgba(255, 255, 255, 0.2);
         }
       `}</style>
     </div>
