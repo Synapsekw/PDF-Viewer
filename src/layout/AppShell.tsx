@@ -12,6 +12,23 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-inter">
+      {/* SUPER HIGH Z-INDEX DEBUG */}
+      <div style={{
+        position: 'fixed',
+        top: '100px',
+        right: '10px',
+        width: '300px',
+        height: '80px',
+        backgroundColor: 'magenta',
+        color: 'white',
+        zIndex: 99999,
+        fontSize: '14px',
+        padding: '10px',
+        border: '3px solid lime',
+        fontWeight: 'bold'
+      }}>
+        APPSHELL DEBUG: This should be visible!
+      </div>
       {/* Background gradient overlay with blur effect - matches landing exactly */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
       
