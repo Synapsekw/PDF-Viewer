@@ -373,6 +373,28 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
+      {/* Always render a simple text layer for debugging */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(255, 0, 0, 0.1)', // Red overlay to see if it renders
+          zIndex: 10,
+          pointerEvents: 'auto',
+          userSelect: 'text',
+        }}
+        onMouseUp={() => {
+          const selection = window.getSelection();
+          if (selection && !selection.isCollapsed) {
+            console.log('[SimpleTextLayer] Text selected:', selection.toString());
+          }
+        }}
+      >
+        <div style={{ padding: '10px', color: 'white', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          Debug Text Layer - Try selecting this text
+        </div>
+      </div>
+      
       {shouldRenderTextLayer && (
         <TextLayer
           page={currentPageObj}
