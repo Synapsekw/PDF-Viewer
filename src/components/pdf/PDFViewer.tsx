@@ -38,8 +38,8 @@ const CanvasWrapper = styled.div`
     display: block;
     transition: width 0.3s ease-out, height 0.3s ease-out;
     margin: auto;
-    /* Background matches the glassmorphic effect */
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 50%, rgba(15, 23, 42, 0.95) 100%);
+    /* Background matches the landing page exactly */
+    background: linear-gradient(135deg, #0f172a 0%, #334155 50%, #0f172a 100%);
   }
 `;
 
@@ -52,6 +52,11 @@ const ControlsBar = styled(Card)`
   align-items: center;
   border-radius: ${theme.borderRadius.full};
   padding: ${theme.spacing[1]};
+  background: ${theme.colors.glass.background};
+  backdrop-filter: blur(${theme.colors.glass.blur});
+  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
+  border: 1px solid ${theme.colors.glass.border};
+  box-shadow: ${theme.shadows.lg};
 `;
 
 const TopControlsBar = styled(Card)`
@@ -63,6 +68,11 @@ const TopControlsBar = styled(Card)`
   align-items: center;
   border-radius: ${theme.borderRadius.full};
   padding: ${theme.spacing[1]};
+  background: ${theme.colors.glass.background};
+  backdrop-filter: blur(${theme.colors.glass.blur});
+  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
+  border: 1px solid ${theme.colors.glass.border};
+  box-shadow: ${theme.shadows.lg};
 `;
 
 const PageDisplay = styled.div`

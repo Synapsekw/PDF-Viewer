@@ -28,7 +28,7 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState<'dark' | 'light' | 'custom'>('dark');
-  const [backgroundVariant, setBackgroundVariant] = useState<'default' | 'gradient1' | 'gradient2' | 'solid' | 'landing'>('default');
+  const [backgroundVariant, setBackgroundVariant] = useState<'default' | 'gradient1' | 'gradient2' | 'solid' | 'landing'>('landing');
   const [colorTheme, setColorTheme] = useState<'slate' | 'green' | 'blue' | 'purple' | 'pink' | 'yellow'>('slate');
 
   return (

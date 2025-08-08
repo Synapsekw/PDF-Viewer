@@ -85,9 +85,9 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
         };
       default: // slate
         return {
-          base: 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
+          base: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
           cross1: 'bg-gradient-to-tr from-slate-800/30 via-slate-600/15 via-transparent to-slate-800/30',
-          cross2: 'bg-gradient-to-bl from-slate-950/20 via-transparent via-slate-700/10 to-slate-800/20'
+          cross2: 'bg-gradient-to-bl from-slate-900/20 via-transparent via-slate-700/10 to-slate-800/20'
         };
     }
   };
@@ -145,24 +145,15 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
   return (
     <div className="min-h-screen font-inter relative overflow-hidden">
-      {/* Background based on variant */}
-      {backgroundVariant === 'landing' ? (
-        <>
-          {/* Landing page background - pixel perfect match */}
-          <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
-          <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
-        </>
-      ) : (
-        <>
-          {/* Smooth background with multiple gradient layers for fluid effect */}
-          <div className={`fixed inset-0 ${backgroundClasses.base}`}></div>
-          <div className={`fixed inset-0 ${backgroundClasses.cross1}`}></div>
-          <div className={`fixed inset-0 ${backgroundClasses.cross2}`}></div>
-        </>
-      )}
+      {/* Background - always use landing page background for consistency */}
+      <>
+        {/* Landing page background - pixel perfect match */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
+      </>
       
       {/* Top Bar */}
-      <header className="relative z-50 w-full backdrop-blur-2xl bg-white/8 border-b border-white/15 shadow-2xl">
+      <header className="relative z-50 w-full bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border-b border-[rgba(255,255,255,0.1)] shadow-lg">
         <div className="flex items-center justify-between px-6 py-0">
           {/* Logo */}
           <div className="flex items-center">
@@ -191,7 +182,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
+              className="p-3 rounded-xl bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(35,47,61,0.8)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300 group"
               title="Upload PDF"
             >
               <Upload className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -200,7 +191,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             <button
               onClick={onDownload}
               disabled={false}
-              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 group"
+              className="p-3 rounded-xl bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(35,47,61,0.8)] hover:border-[rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 group"
               title="Download PDF"
             >
               <Download className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -215,8 +206,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
                     setShowAnalyticsDropdown(!showAnalyticsDropdown);
                   }
                 }}
-                className={`p-3 rounded-xl backdrop-blur-2xl border border-white/15 transition-all duration-300 group ${
-                  isAnalyticsEnabled ? 'bg-blue-500/25 hover:bg-blue-500/35' : 'bg-white/6 hover:bg-white/12 hover:border-white/25'
+                className={`p-3 rounded-xl backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] transition-all duration-300 group ${
+                  isAnalyticsEnabled ? 'bg-blue-500/25 hover:bg-blue-500/35' : 'bg-[rgba(35,47,61,0.6)] hover:bg-[rgba(35,47,61,0.8)] hover:border-[rgba(255,255,255,0.2)]'
                 }`}
                 title={isAnalyticsEnabled ? "Disable Analytics" : "Select Analytics Type"}
               >
@@ -225,7 +216,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
               
               {/* Analytics Type Dropdown */}
               {showAnalyticsDropdown && !isAnalyticsEnabled && (
-                <div className="absolute top-full right-0 mt-2 w-48 backdrop-blur-3xl bg-white/12 border border-white/20 rounded-xl shadow-2xl z-50">
+                <div className="absolute top-full right-0 mt-2 w-48 bg-[rgba(35,47,61,0.8)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-xl shadow-lg z-50">
                   <div className="p-2">
                     <div className="text-xs text-white/80 px-3 py-1 mb-2 font-medium">Select Analytics Type</div>
                     {[
@@ -279,7 +270,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={onExportAnalytics}
-              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
+              className="p-3 rounded-xl bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(35,47,61,0.8)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300 group"
               title="Export Analytics"
             >
               <FileDown className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -287,7 +278,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             
             <button
               onClick={onOpenSettings}
-              className="p-3 rounded-xl backdrop-blur-2xl bg-white/6 border border-white/15 hover:bg-white/12 hover:border-white/25 transition-all duration-300 group"
+              className="p-3 rounded-xl bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(35,47,61,0.8)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300 group"
               title="Settings"
             >
               <Settings className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
@@ -300,7 +291,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
       <div className="relative z-10 flex h-[calc(100vh-80px)] p-6 space-x-6">
         {/* Left Panel - PDF Viewer (70%) */}
         <div className="flex-1 w-[70%] relative">
-          <div className="h-full backdrop-blur-2xl bg-white/8 border border-white/15 rounded-2xl shadow-2xl">
+          <div className="h-full bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-2xl shadow-lg">
             {/* PDF Viewer Content */}
             <div className="w-full h-full">
               {/* PDFViewer handles its own welcome/content states and styling */}
@@ -311,11 +302,11 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
         {/* Right Panel - AI Assistant (30%) */}
         <div className="w-[30%] flex flex-col">
-          <div className="h-full backdrop-blur-2xl bg-white/8 border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="h-full bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-2xl shadow-lg overflow-hidden">
             {/* AI Assistant Header */}
-            <div className="p-6 border-b border-white/15">
+            <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg backdrop-blur-2xl bg-white/8 border border-white/15">
+                <div className="p-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)]">
                   <Menu className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-semibold text-white">AI Assistant</h2>
@@ -333,7 +324,7 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
                     className={`max-w-[85%] p-4 rounded-2xl text-white text-sm leading-relaxed ${
                       message.isUser
                         ? 'bg-blue-500/70 backdrop-blur-2xl rounded-br-md'
-                        : 'backdrop-blur-2xl bg-white/8 border border-white/15 rounded-bl-md'
+                        : 'bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-bl-md'
                     }`}
                   >
                     {message.text}
@@ -343,8 +334,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-white/15">
-              <div className="flex items-center space-x-3 backdrop-blur-2xl bg-white/8 border border-white/15 rounded-full p-2">
+            <div className="p-6 border-t border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center space-x-3 bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-full p-2">
                 <input
                   type="text"
                   placeholder="Ask anything about this PDF..."

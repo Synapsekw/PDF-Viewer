@@ -75,7 +75,7 @@ const PDFViewerAppContent: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <GlassViewLayout
         onFileUpload={handleFileUpload}
         onOpenSettings={() => setShowSettings(true)}
@@ -91,19 +91,7 @@ const PDFViewerAppContent: React.FC = () => {
       )}
 
       {showExport && (
-        <div className="modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(8px)'
-        }}>
+        <div className="modal-overlay">
           <ExportPanel onClose={() => setShowExport(false)} />
         </div>
       )}

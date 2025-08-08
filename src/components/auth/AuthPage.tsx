@@ -171,21 +171,21 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // For development: immediately navigate to app regardless of credentials
+    // For development: immediately navigate to dashboard regardless of credentials
     setTimeout(() => {
       setIsLoading(false);
-      navigate('/app');
+      navigate('/dashboard');
     }, 500); // Reduced delay for faster development
   };
 
   const handleGoogleAuth = () => {
-    // For development: immediately navigate to app
-    navigate('/app');
+    // For development: immediately navigate to dashboard
+    navigate('/dashboard');
   };
 
   const handleAppleAuth = () => {
-    // For development: immediately navigate to app
-    navigate('/app');
+    // For development: immediately navigate to dashboard
+    navigate('/dashboard');
   };
 
   const handleBackToHome = () => {
