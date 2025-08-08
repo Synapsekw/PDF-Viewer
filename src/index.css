@@ -11,6 +11,16 @@ html, body {
   min-height: 100vh;
 }
 
+/* PDF.js text layer defaults */
+.textLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.textLayer .endOfContent { display: none; }
+
 /* AppShell sidebar width CSS variables */
 :root {
   --sidebar-w-expanded: 280px;

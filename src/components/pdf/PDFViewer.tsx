@@ -50,6 +50,9 @@ const CanvasWrapper = styled.div`
     margin: auto;
     /* Background matches the landing page exactly */
     background: linear-gradient(135deg, #0f172a 0%, #334155 50%, #0f172a 100%);
+    z-index: 1;
+    position: absolute;
+    inset: 0;
   }
 `;
 
