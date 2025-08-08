@@ -365,20 +365,41 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     <div
       style={{
         position: 'relative',
-        width: currentViewport ? currentViewport.width : undefined,
-        height: currentViewport ? currentViewport.height : undefined,
+        width: currentViewport ? currentViewport.width : '500px', // fallback width
+        height: currentViewport ? currentViewport.height : '700px', // fallback height
+        backgroundColor: 'rgba(0, 255, 0, 0.2)', // Green background to see container
+        border: '3px solid blue', // Blue border to see container bounds
+        minWidth: '200px',
+        minHeight: '200px',
       }}
     >
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
+      {/* Simple debug element */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          padding: '10px',
+          backgroundColor: 'red',
+          color: 'white',
+          zIndex: 100,
+          fontSize: '16px',
+          border: '2px solid yellow',
+        }}
+      >
+        DEBUG: PdfEngine is rendering
+      </div>
+      
       {/* Always render a simple text layer for debugging */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: 'rgba(255, 0, 0, 0.1)', // Red overlay to see if it renders
+          backgroundColor: 'rgba(255, 0, 0, 0.3)', // More visible red overlay
           zIndex: 10,
           pointerEvents: 'auto',
           userSelect: 'text',
@@ -390,7 +411,15 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
           }
         }}
       >
-        <div style={{ padding: '10px', color: 'white', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div style={{ 
+          padding: '20px', 
+          color: 'white', 
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          fontSize: '18px',
+          position: 'absolute',
+          top: '50px',
+          left: '10px'
+        }}>
           Debug Text Layer - Try selecting this text
         </div>
       </div>
