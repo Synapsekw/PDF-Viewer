@@ -298,6 +298,16 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     return () => clearTimeout(timeoutId);
   }, [pdfDocument, currentPage, scale, rotation]);
 
+  // Debug logging for TextLayer rendering
+  // eslint-disable-next-line no-console
+  console.log('[PdfEngine] Render state:', {
+    currentPageObj: !!currentPageObj,
+    currentViewport: !!currentViewport,
+    currentPage,
+    scale,
+    rotation
+  })
+
   return (
     <div
       style={{

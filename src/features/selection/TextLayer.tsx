@@ -11,6 +11,9 @@ type Props = {
 }
 
 export function TextLayer({ page, pageIndex, transform, className }: Props) {
+  // eslint-disable-next-line no-console
+  console.log('[TextLayer] Component mounted:', { pageIndex, transform })
+  
   const containerRef = useRef<HTMLDivElement>(null)
 
   const viewport = useMemo(
