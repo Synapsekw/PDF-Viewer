@@ -3,8 +3,63 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
 import { TextLayer } from '@/features/selection/TextLayer';
 
-// Debug: Check if this file is being loaded
-console.log('[PdfEngine] File loaded with debug logs');
+// Simple text layer component for text selection
+const SimpleTextLayer: React.FC<{ page: any; viewport: any; pageIndex: number }> = ({ page, viewport, pageIndex }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadText = async () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      container.innerHTML = ''; // Clear previous content
+      
+      try {
+        // Get text content from PDF
+        const textContent = await page.getTextContent();
+        
+        // Create spans for each text item
+        textContent.items.forEach((item: any) => {
+          const span = document.createElement('span');
+          span.textContent = item.str;
+          span.style.position = 'absolute';
+          span.style.left = `${item.transform[4]}px`;
+          span.style.top = `${viewport.height - item.transform[5]}px`; // Flip Y coordinate
+          span.style.fontSize = `${item.transform[0]}px`;
+          span.style.color = 'transparent';
+          span.style.userSelect = 'text';
+          span.style.pointerEvents = 'auto';
+          container.appendChild(span);
+        });
+        
+        console.log('[SimpleTextLayer] Rendered', textContent.items.length, 'text items');
+      } catch (error) {
+        console.error('[SimpleTextLayer] Error loading text:', error);
+      }
+    };
+
+    loadText();
+  }, [page, viewport]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 5,
+        pointerEvents: 'auto',
+        userSelect: 'text',
+      }}
+      onMouseUp={() => {
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+          console.log('[SimpleTextLayer] Selected text:', selection.toString());
+        }
+      }}
+    />
+  );
+};
 
 const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
@@ -365,64 +420,22 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     <div
       style={{
         position: 'relative',
-        width: currentViewport ? currentViewport.width : '500px', // fallback width
-        height: currentViewport ? currentViewport.height : '700px', // fallback height
-        backgroundColor: 'rgba(0, 255, 0, 0.2)', // Green background to see container
-        border: '3px solid blue', // Blue border to see container bounds
-        minWidth: '200px',
-        minHeight: '200px',
+        width: currentViewport ? currentViewport.width : undefined,
+        height: currentViewport ? currentViewport.height : undefined,
       }}
     >
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
-      {/* Simple debug element */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          padding: '10px',
-          backgroundColor: 'red',
-          color: 'white',
-          zIndex: 100,
-          fontSize: '16px',
-          border: '2px solid yellow',
-        }}
-      >
-        DEBUG: PdfEngine is rendering
-      </div>
-      
-      {/* Always render a simple text layer for debugging */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundColor: 'rgba(255, 0, 0, 0.3)', // More visible red overlay
-          zIndex: 10,
-          pointerEvents: 'auto',
-          userSelect: 'text',
-        }}
-        onMouseUp={() => {
-          const selection = window.getSelection();
-          if (selection && !selection.isCollapsed) {
-            console.log('[SimpleTextLayer] Text selected:', selection.toString());
-          }
-        }}
-      >
-        <div style={{ 
-          padding: '20px', 
-          color: 'white', 
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          fontSize: '18px',
-          position: 'absolute',
-          top: '50px',
-          left: '10px'
-        }}>
-          Debug Text Layer - Try selecting this text
-        </div>
-      </div>
+      {/* Text selection layer - render only when PDF is loaded */}
+      {currentPageObj && currentViewport && (
+        <SimpleTextLayer 
+          page={currentPageObj} 
+          viewport={currentViewport}
+          pageIndex={(currentPage || 1) - 1}
+        />
+      )}
       
       {shouldRenderTextLayer && (
         <TextLayer

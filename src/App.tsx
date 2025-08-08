@@ -11,23 +11,6 @@ const App: React.FC = () => {
   
   return (
     <div>
-      {/* EMERGENCY DEBUG - Should be visible on any route */}
-      <div style={{
-        position: 'fixed',
-        top: '0px',
-        left: '0px',
-        width: '200px',
-        height: '50px',
-        backgroundColor: 'red',
-        color: 'white',
-        zIndex: 9999,
-        fontSize: '16px',
-        padding: '10px',
-        border: '5px solid yellow'
-      }}>
-        EMERGENCY DEBUG: App is rendering
-      </div>
-      
       <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
