@@ -308,7 +308,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     >
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+        style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
       {currentPageObj && (
         <TextLayer

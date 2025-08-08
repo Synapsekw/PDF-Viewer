@@ -25,26 +25,36 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
       const container = containerRef.current
       if (!container) return
       container.innerHTML = '' // reset
+      container.classList.add('textLayer')
 
-      const textContent = await page.getTextContent({
-        normalizeWhitespace: true,
-        includeMarkedContent: true,
-      })
-      if (cancelled) return
+      try {
+        const textContent = await page.getTextContent({
+          normalizeWhitespace: true,
+          includeMarkedContent: true,
+        })
+        if (cancelled) return
 
-      await renderTextLayer({
-        textContentSource: textContent,
-        container,
-        viewport,
-        textDivs: [],
-        timeout: 0,
-        enhanceTextSelection: true,
-      })
+        await renderTextLayer({
+          textContentSource: textContent,
+          container,
+          viewport,
+          textDivs: [],
+          timeout: 0,
+          enhanceTextSelection: true,
+        })
 
-      // Make the text invisible but selectable
-      container.querySelectorAll('span').forEach((el) => {
-        (el as HTMLElement).style.opacity = '0'
-      })
+        // Make the text invisible but selectable
+        container.querySelectorAll('span').forEach((el) => {
+          (el as HTMLElement).style.opacity = '0'
+        })
+
+        // Debug: log rendered spans
+        // eslint-disable-next-line no-console
+        console.log('[TextLayer] rendered spans:', container.querySelectorAll('span').length)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[TextLayer] render failed', err)
+      }
     })()
     return () => { cancelled = true }
   }, [page, viewport])
@@ -69,7 +79,7 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
   return (
     <div
       ref={containerRef}
-      className={className ?? 'pdf-text-layer'}
+      className={className ? `textLayer ${className}` : 'textLayer'}
       onMouseUp={onMouseUp}
       style={{
         position: 'absolute',

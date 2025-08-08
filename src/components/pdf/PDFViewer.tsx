@@ -53,6 +53,7 @@ const CanvasWrapper = styled.div`
     z-index: 1;
     position: absolute;
     inset: 0;
+    pointer-events: none;
   }
 `;
 
