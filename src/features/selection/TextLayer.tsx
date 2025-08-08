@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useCallback } from 'react'
 import type { PageTransform, SelectionEvent } from './types'
 import { emitSelection } from './useSelectionAnalytics'
-import { renderTextLayer } from 'pdfjs-dist/web/pdf_viewer'
+import { renderTextLayer } from 'pdfjs-dist/web/pdf_viewer.js'
 
 type Props = {
   page: any // PDFPageProxy
@@ -27,6 +27,14 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
       container.innerHTML = '' // reset
       container.classList.add('textLayer')
 
+      // eslint-disable-next-line no-console
+      console.log('[TextLayer] mount: pageIndex=', pageIndex, 'viewport=', {
+        width: viewport.width,
+        height: viewport.height,
+        scale: transform.scale,
+        rotation: transform.rotation,
+      })
+
       try {
         const textContent = await page.getTextContent({
           normalizeWhitespace: true,
@@ -34,7 +42,7 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
         })
         if (cancelled) return
 
-        await renderTextLayer({
+        const result = await renderTextLayer({
           textContentSource: textContent,
           container,
           viewport,
@@ -50,7 +58,7 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
 
         // Debug: log rendered spans
         // eslint-disable-next-line no-console
-        console.log('[TextLayer] rendered spans:', container.querySelectorAll('span').length)
+        console.log('[TextLayer] rendered spans:', container.querySelectorAll('span').length, 'result=', result)
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('[TextLayer] render failed', err)
@@ -79,7 +87,7 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
   return (
     <div
       ref={containerRef}
-      className={className ? `textLayer ${className}` : 'textLayer'}
+      className={className ? `${className} textLayer` : 'textLayer'}
       onMouseUp={onMouseUp}
       style={{
         position: 'absolute',

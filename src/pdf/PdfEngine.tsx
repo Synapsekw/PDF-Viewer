@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
-import { TextLayer } from '../features/selection/TextLayer';
+import { TextLayer } from '@/features/selection/TextLayer';
 
 const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
@@ -310,7 +310,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
-      {currentPageObj && (
+      {currentPageObj && currentViewport && (
         <TextLayer
           page={currentPageObj}
           pageIndex={(currentPage || 1) - 1}
