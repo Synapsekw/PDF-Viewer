@@ -16,36 +16,48 @@ interface InteractionPoint {
   details?: any;
 }
 
-const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
+const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef, isAnalyticsEnabled, selectedAnalyticsType }) => {
   const { currentPage, document: pdfDocument } = usePdf();
   const { getAnalyticsReport } = useAnalytics();
   const [isLiveViewEnabled, setIsLiveViewEnabled] = useState(false);
-  const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
+  const [localSelectedAnalyticsType, setLocalSelectedAnalyticsType] = useState<string>('none');
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Monitor live view settings
   useEffect(() => {
     const checkLiveViewSettings = () => {
-      const liveViewElement = document.getElementById('analytics-live-view-element');
-      const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
-      const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
+      // Use props as primary source, fall back to global DOM element
+      let isEnabled = isAnalyticsEnabled || false;
+      let analyticsType = selectedAnalyticsType || 'none';
       
-      console.log('InteractionVisualizer: Checking settings:', { isEnabled, analyticsType });
+      // Fall back to global DOM element if props are not available
+      if (isAnalyticsEnabled === undefined || selectedAnalyticsType === undefined) {
+        const liveViewElement = window.document.getElementById('analytics-live-view-element');
+        isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
+        analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
+      }
+      
+      console.log('InteractionVisualizer: Checking settings:', { 
+        isEnabled, 
+        analyticsType, 
+        propsEnabled: isAnalyticsEnabled, 
+        propsType: selectedAnalyticsType 
+      });
       
       // Only update state if values have actually changed
       setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
-      setSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
+      setLocalSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
     };
 
     checkLiveViewSettings();
     const interval = setInterval(checkLiveViewSettings, 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAnalyticsEnabled, selectedAnalyticsType]);
 
   // Render interaction points
   useEffect(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'interactions' || !pdfDocument) {
+    if (!isLiveViewEnabled || localSelectedAnalyticsType !== 'interactions' || !pdfDocument) {
       return;
     }
 
@@ -168,10 +180,10 @@ const InteractionVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, 
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isLiveViewEnabled, selectedAnalyticsType, currentPage, canvasRef]);
+  }, [isLiveViewEnabled, localSelectedAnalyticsType, currentPage, canvasRef]);
 
   // Only render if live view is enabled and interactions type is selected
-  if (!isLiveViewEnabled || selectedAnalyticsType !== 'interactions') {
+  if (!isLiveViewEnabled || localSelectedAnalyticsType !== 'interactions') {
     return null;
   }
 

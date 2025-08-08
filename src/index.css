@@ -11,6 +11,13 @@ html, body {
   min-height: 100vh;
 }
 
+/* AppShell sidebar width CSS variables */
+:root {
+  --sidebar-w-expanded: 280px;
+  --sidebar-w-collapsed: 72px;
+  --sidebar-w: var(--sidebar-w-expanded);
+}
+
 /* Custom glassmorphic utilities */
 @layer utilities {
   .glass-panel {

@@ -27,13 +27,13 @@ const getDynamicConfig = (scale: number): HeatmapConfig => {
   };
 };
 
-const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
+const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef, isAnalyticsEnabled, selectedAnalyticsType }) => {
   const { currentPage, scale, rotation, document: pdfDocument } = usePdf();
   const { updateHeatmapData, recordInteraction } = useAnalytics();
   const [heatmapData, setHeatmapData] = useState<Map<number, PageHeatmapData>>(new Map());
   const [config, setConfig] = useState<HeatmapConfig>(getDynamicConfig(scale));
   const [isLiveViewEnabled, setIsLiveViewEnabled] = useState(false);
-  const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
+  const [localSelectedAnalyticsType, setLocalSelectedAnalyticsType] = useState<string>('none');
   const heatmapCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const lastInteractionTime = useRef<number>(0);
@@ -48,15 +48,27 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
   // Monitor live view settings from analytics controls
   useEffect(() => {
     const checkLiveViewSettings = () => {
-      const liveViewElement = document.getElementById('analytics-live-view-element');
-      const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
-      const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
+      // Use props as primary source, fall back to global DOM element
+      let isEnabled = isAnalyticsEnabled || false;
+      let analyticsType = selectedAnalyticsType || 'none';
       
-      console.log('MouseHeatmap: Checking settings:', { isEnabled, analyticsType });
+      // Fall back to global DOM element if props are not available
+      if (isAnalyticsEnabled === undefined || selectedAnalyticsType === undefined) {
+        const liveViewElement = window.document.getElementById('analytics-live-view-element');
+        isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
+        analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
+      }
+      
+      console.log('MouseHeatmap: Checking settings:', { 
+        isEnabled, 
+        analyticsType, 
+        propsEnabled: isAnalyticsEnabled, 
+        propsType: selectedAnalyticsType 
+      });
       
       // Only update state if values have actually changed
       setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
-      setSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
+      setLocalSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
     };
 
     // Check immediately and set up polling
@@ -64,7 +76,7 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
     const interval = setInterval(checkLiveViewSettings, 100);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isAnalyticsEnabled, selectedAnalyticsType]);
 
   // Update canvas bounds when scale or rotation changes
   useEffect(() => {
@@ -253,7 +265,7 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
 
   // Heat map legend component with dynamic stats
   const HeatmapLegend = () => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'heatmap') return null;
+    if (!isLiveViewEnabled || localSelectedAnalyticsType !== 'heatmap') return null;
 
     // Calculate current heat map stats
     const pageData = heatmapData.get(currentPage);
@@ -769,13 +781,24 @@ const MouseHeatmapComponent: React.FC<PdfFeatureProps> = ({ canvasRef, container
   }, [getCanvasPosition, scale, rotation]);
 
   // Only render heatmap if live view is enabled and heatmap type is selected
-  console.log('MouseHeatmap render check:', { isLiveViewEnabled, selectedAnalyticsType, hasPdfDocument: !!pdfDocument });
-  if (!isLiveViewEnabled || selectedAnalyticsType !== 'heatmap') {
+  console.log('MouseHeatmap render check:', { 
+    isLiveViewEnabled, 
+    localSelectedAnalyticsType, 
+    hasPdfDocument: !!pdfDocument,
+    hasCanvasRef: !!canvasRef.current,
+    hasContainerRef: !!containerRef.current,
+    containerRefElement: containerRef.current
+  });
+  if (!isLiveViewEnabled || localSelectedAnalyticsType !== 'heatmap') {
     console.log('MouseHeatmap: Not rendering due to conditions not met');
     return null;
   }
   
-  console.log('MouseHeatmap: Rendering component');
+  console.log('MouseHeatmap: Rendering component', {
+    canvasWidth: canvasRef.current?.width,
+    canvasHeight: canvasRef.current?.height,
+    containerElement: containerRef.current
+  });
 
   // Don't render if no document is loaded
   if (!pdfDocument) {

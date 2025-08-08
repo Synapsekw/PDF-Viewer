@@ -20,11 +20,12 @@ interface TimeRegion {
   lastUpdate: number;
 }
 
-const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef }) => {
+const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, containerRef, isAnalyticsEnabled, selectedAnalyticsType }) => {
   const { currentPage, scale, rotation, document: pdfDocument } = usePdf();
   const { getAnalyticsReport, recordInteraction } = useAnalytics();
+  // Prefer props from parent for live state; DOM fallback kept for robustness
   const [isLiveViewEnabled, setIsLiveViewEnabled] = useState(false);
-  const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
+  const [localSelectedAnalyticsType, setLocalSelectedAnalyticsType] = useState<string>('none');
   const [timeRegions, setTimeRegions] = useState<Map<string, TimeRegion>>(new Map());
   const [canvasPosition, setCanvasPosition] = useState({ top: 0, left: 0 });
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,22 +36,12 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
 
   // Monitor live view settings
   useEffect(() => {
-    const checkLiveViewSettings = () => {
-      const liveViewElement = document.getElementById('analytics-live-view-element');
-      const isEnabled = liveViewElement?.getAttribute('data-analytics-live-view') === 'true';
-      const analyticsType = liveViewElement?.getAttribute('data-analytics-type') || 'none';
-      
-      console.log('TimeVisualizer: Checking settings:', { isEnabled, analyticsType });
-      
-      // Only update state if values have actually changed
-      setIsLiveViewEnabled(prev => prev !== isEnabled ? isEnabled : prev);
-      setSelectedAnalyticsType(prev => prev !== analyticsType ? analyticsType : prev);
-    };
-
-    checkLiveViewSettings();
-    const interval = setInterval(checkLiveViewSettings, 100);
-    return () => clearInterval(interval);
-  }, []);
+    // Always prefer props directly for immediacy
+    const isEnabledFromProps = !!isAnalyticsEnabled;
+    const typeFromProps = selectedAnalyticsType || 'none';
+    setIsLiveViewEnabled(isEnabledFromProps);
+    setLocalSelectedAnalyticsType(typeFromProps);
+  }, [isAnalyticsEnabled, selectedAnalyticsType]);
 
   // Optimized mouse movement handler with performance monitoring (matching MouseHeatmap)
   const optimizedMouseMove = useCallback(
@@ -110,7 +101,7 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
 
   // Track mouse position for time visualization
   useEffect(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time') {
+    if (!isAnalyticsEnabled || selectedAnalyticsType !== 'page_time') {
       return;
     }
 
@@ -121,11 +112,11 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
     return () => {
       container.removeEventListener('mousemove', optimizedMouseMove);
     };
-  }, [isLiveViewEnabled, selectedAnalyticsType, optimizedMouseMove, containerRef]);
+  }, [isAnalyticsEnabled, selectedAnalyticsType, optimizedMouseMove, containerRef]);
 
   // Update time regions based on mouse position
   useEffect(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time') {
+    if (!isAnalyticsEnabled || selectedAnalyticsType !== 'page_time') {
       return;
     }
 
@@ -235,11 +226,11 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
 
     const interval = setInterval(updateTimeRegions, 200); // Reduce frequency to match performance
     return () => clearInterval(interval);
-  }, [isLiveViewEnabled, selectedAnalyticsType, currentPage, regionSize, canvasRef, scale, recordInteraction]);
+  }, [isAnalyticsEnabled, selectedAnalyticsType, currentPage, regionSize, canvasRef, scale, recordInteraction]);
 
   // Render time visualization using animation frame (matching MouseHeatmap approach)
   const renderTimeVisualization = useCallback(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time') {
+    if (!isAnalyticsEnabled || selectedAnalyticsType !== 'page_time') {
       return;
     }
 
@@ -341,11 +332,11 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
       
       ctx.restore();
     });
-  }, [isLiveViewEnabled, selectedAnalyticsType, currentPage, timeRegions, canvasRef, scale]);
+  }, [isAnalyticsEnabled, selectedAnalyticsType, currentPage, timeRegions, canvasRef, scale]);
 
   // Set up animation frame rendering like MouseHeatmap
   useEffect(() => {
-    if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time') {
+    if (!isAnalyticsEnabled || selectedAnalyticsType !== 'page_time') {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = undefined;
@@ -408,8 +399,8 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
   }, []);
 
   // Only render if live view is enabled and page_time type is selected
-  console.log('TimeVisualizer render check:', { isLiveViewEnabled, selectedAnalyticsType, hasPdfDocument: !!pdfDocument });
-  if (!isLiveViewEnabled || selectedAnalyticsType !== 'page_time' || !pdfDocument) {
+  console.log('TimeVisualizer render check:', { isAnalyticsEnabled, selectedAnalyticsType, hasPdfDocument: !!pdfDocument });
+  if (!isAnalyticsEnabled || selectedAnalyticsType !== 'page_time' || !pdfDocument) {
     console.log('TimeVisualizer: Not rendering due to conditions not met');
     return null;
   }
@@ -430,7 +421,7 @@ const TimeVisualizerComponent: React.FC<PdfFeatureProps> = ({ canvasRef, contain
           top: canvasPosition.top,
           left: canvasPosition.left,
           pointerEvents: 'none',
-          opacity: isLiveViewEnabled && selectedAnalyticsType === 'page_time' ? 0.8 : 0,
+          opacity: isAnalyticsEnabled && selectedAnalyticsType === 'page_time' ? 0.8 : 0,
           transition: 'opacity 0.3s ease',
           // No transform needed since we're working in actual canvas coordinates
           // The overlay canvas will match the PDF canvas dimensions exactly

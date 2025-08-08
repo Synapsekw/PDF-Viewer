@@ -19,39 +19,18 @@ const PDFViewerAppContent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showAnalyticsDropdown, setShowAnalyticsDropdown] = useState(false);
-  const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('mouse-heatmap');
+  const [isAnalyticsEnabled, setIsAnalyticsEnabled] = useState(false);
+  const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
   const { document: pdfDocument, setFile } = usePdf();
   const { recordInteraction } = useAnalytics();
+  
+  // Removed forced re-render key to prevent resets/flicker
 
-  const handleToggleAnalytics = (analyticsType: string) => {
-    setSelectedAnalyticsType(analyticsType);
-    setShowAnalyticsDropdown(false);
-    
-    // Update the analytics-live-view-element with the selected type
-    const analyticsElement = document.getElementById('analytics-live-view-element');
-    if (analyticsElement) {
-      analyticsElement.setAttribute('data-analytics-type', analyticsType);
-      analyticsElement.setAttribute('data-analytics-enabled', 'true');
-      console.log('Analytics dropdown: Updated analytics element with type:', analyticsType);
-    }
-    
-    recordInteraction({
-      type: 'click',
-      details: { action: 'toggle_analytics', analyticsType }
-    });
-  };
+
 
   const handleAnalyticsButtonClick = () => {
-    if (showAnalyticsDropdown) {
-      setShowAnalyticsDropdown(false);
-      // Disable analytics
-      const analyticsElement = document.getElementById('analytics-live-view-element');
-      if (analyticsElement) {
-        analyticsElement.setAttribute('data-analytics-enabled', 'false');
-      }
-    } else {
-      setShowAnalyticsDropdown(true);
-    }
+    // Don't toggle the dropdown off here - let the PDFViewer handle dropdown state
+    setShowAnalyticsDropdown(!showAnalyticsDropdown);
   };
 
   const handleFileUpload = (file: File) => {
@@ -75,15 +54,54 @@ const PDFViewerAppContent: React.FC = () => {
   };
 
   return (
-    <div className="app-container min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <GlassViewLayout
+    <div className="transition-[margin] duration-200 ease-out min-w-0">
+      <div className="app-container min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <GlassViewLayout
         onFileUpload={handleFileUpload}
         onOpenSettings={() => setShowSettings(true)}
         onExportAnalytics={handleExportAnalytics}
         onToggleAnalytics={handleAnalyticsButtonClick}
-        isAnalyticsEnabled={showAnalyticsDropdown}
+        isAnalyticsEnabled={isAnalyticsEnabled}
       >
-        <PDFViewerWithFeatures onFileUpload={handleFileUpload} />
+        <PDFViewerWithFeatures 
+          onFileUpload={handleFileUpload}
+          onDownload={() => console.log('Download PDF')}
+          onExportAnalytics={handleExportAnalytics}
+          isAnalyticsEnabled={isAnalyticsEnabled}
+          onToggleAnalytics={handleAnalyticsButtonClick}
+          onAnalyticsTypeChange={(type) => {
+            console.log('🔥 PDFViewerApp: Analytics type changing from', selectedAnalyticsType, 'to', type);
+            
+            // Update state based on type
+            const newIsEnabled = type !== 'none';
+            
+            // Only update state if values actually changed
+            if (newIsEnabled !== isAnalyticsEnabled || type !== selectedAnalyticsType) {
+              setIsAnalyticsEnabled(newIsEnabled);
+              setSelectedAnalyticsType(type);
+              
+              // Update global element immediately with new values
+              let analyticsElement = window.document.getElementById('analytics-live-view-element');
+              if (!analyticsElement) {
+                analyticsElement = window.document.createElement('div');
+                analyticsElement.id = 'analytics-live-view-element';
+                analyticsElement.style.display = 'none';
+                window.document.body.appendChild(analyticsElement);
+                console.log('PDFViewerApp: Created analytics element');
+              }
+              
+              analyticsElement.setAttribute('data-analytics-live-view', newIsEnabled ? 'true' : 'false');
+              analyticsElement.setAttribute('data-analytics-type', type);
+              
+              console.log('🚀 PDFViewerApp: Analytics state updated:', { 
+                isEnabled: newIsEnabled, 
+                type: type,
+                element: analyticsElement
+              });
+            }
+          }}
+          selectedAnalyticsType={selectedAnalyticsType}
+        />
       </GlassViewLayout>
 
       {showSettings && (
@@ -95,6 +113,7 @@ const PDFViewerAppContent: React.FC = () => {
           <ExportPanel onClose={() => setShowExport(false)} />
         </div>
       )}
+      </div>
     </div>
   );
 };

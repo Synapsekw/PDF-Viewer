@@ -19,8 +19,6 @@ import PageDropoffChart from '../components/dashboard/PageDropoffChart';
 import { getKpis, getViewsTimeSeries, getTopPdfsByViews, getTopKeywords, getTopQuestions } from '../lib/analytics/mockAnalytics';
 import { Kpis, TimeSeriesDataPoint, TopPdfData, KeywordData, QuestionData } from '../lib/analytics/types';
 import { USE_MOCK_ANALYTICS } from '../lib/analytics/config';
-import { Button } from '../components/ui/Button';
-import { FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
 import theme from '../theme';
 
 const DashboardContainer = styled.div`
@@ -41,40 +39,7 @@ const DashboardContainer = styled.div`
   }
 `;
 
-const Header = styled.header`
-  position: relative;
-  z-index: 10;
-  padding: ${theme.spacing[6]} ${theme.spacing[6]} ${theme.spacing[4]};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: ${theme.spacing[4]};
-`;
 
-const HeaderContent = styled.div`
-  flex: 1;
-`;
-
-const Title = styled.h1`
-  color: ${theme.colors.text.primary};
-  font-size: ${theme.typography.fontSize['3xl']};
-  font-weight: ${theme.typography.fontWeight.bold};
-  margin: 0 0 ${theme.spacing[1]} 0;
-  letter-spacing: -0.025em;
-`;
-
-const Subtitle = styled.p`
-  color: ${theme.colors.text.secondary};
-  font-size: ${theme.typography.fontSize.md};
-  margin: 0;
-`;
-
-const HeaderActions = styled.div`
-  display: flex;
-  gap: ${theme.spacing[3]};
-  align-items: center;
-`;
 
 const MainContent = styled.main`
   position: relative;
@@ -102,6 +67,7 @@ const ChartsGrid = styled.div`
   grid-template-columns: repeat(1, 1fr);
   gap: ${theme.spacing[6]};
   margin-top: ${theme.spacing[8]};
+  min-w-0;
   
   @media (min-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
@@ -113,6 +79,7 @@ const IntelligenceGrid = styled.div`
   grid-template-columns: repeat(1, 1fr);
   gap: ${theme.spacing[6]};
   margin-top: ${theme.spacing[8]};
+  min-w-0;
   
   @media (min-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
@@ -124,18 +91,30 @@ const EngagementGrid = styled.div`
   grid-template-columns: repeat(1, 1fr);
   gap: ${theme.spacing[6]};
   margin-top: ${theme.spacing[8]};
+  min-w-0;
   
   @media (min-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
   }
 `;
 
+// TODO: refine sticky thresholds when we finalize header height.
 const SectionTitle = styled.h2`
   color: ${theme.colors.text.primary};
   font-size: ${theme.typography.fontSize.xl};
   font-weight: ${theme.typography.fontWeight.semibold};
   margin: ${theme.spacing[8]} 0 ${theme.spacing[6]} 0;
   letter-spacing: -0.025em;
+  position: sticky;
+  top: 4rem; /* header height */
+  z-index: 20;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: ${theme.spacing[4]} 0;
+  margin-top: 0;
+  margin-bottom: ${theme.spacing[6]};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
 const LoadingState = styled.div`
@@ -240,43 +219,12 @@ const Dashboard: React.FC = () => {
     fetchIntelligenceData();
   }, []);
 
-  const handleBackToApp = () => {
-    navigate('/app');
-  };
 
-  const handleRefresh = () => {
-    fetchKpis();
-    fetchChartData();
-    fetchIntelligenceData();
-  };
 
-  return (
-    <DashboardContainer>
-      <Header>
-        <HeaderContent>
-          <Title>PDF Engagement Dashboard</Title>
-          <Subtitle>Overview</Subtitle>
-        </HeaderContent>
-        <HeaderActions>
-          <Button
-            variant="glass"
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            <FiRefreshCw className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </Button>
-          <Button
-            variant="glass"
-            onClick={handleBackToApp}
-          >
-            <FiArrowLeft />
-            Back to App
-          </Button>
-        </HeaderActions>
-      </Header>
-
-      <MainContent>
+    return (
+    <div className="transition-[margin] duration-200 ease-out min-w-0">
+      <DashboardContainer>
+        <MainContent>
         {loading && (
           <KpiGrid>
             <KpiCardSkeleton />
@@ -289,14 +237,6 @@ const Dashboard: React.FC = () => {
         {error && (
           <ErrorState>
             {error}
-            <br />
-            <Button
-              variant="primary"
-              onClick={fetchKpis}
-              style={{ marginTop: theme.spacing[4] }}
-            >
-              Try Again
-            </Button>
           </ErrorState>
         )}
 
@@ -341,6 +281,7 @@ const Dashboard: React.FC = () => {
         </EngagementGrid>
       </MainContent>
     </DashboardContainer>
+    </div>
   );
 };
 

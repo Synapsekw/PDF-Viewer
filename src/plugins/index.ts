@@ -56,7 +56,7 @@ export const AVAILABLE_PLUGINS: PluginConfig[] = [
     id: 'analytics-overlay',
     name: 'Analytics Overlay',
     description: 'Displays analytics information as an overlay',
-    enabled: false, // Disabled - using toolbar button instead
+    enabled: true, // Enabled for dropdown integration
     priority: 2,
     component: AnalyticsOverlay,
     config: {

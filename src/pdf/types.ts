@@ -67,6 +67,10 @@ export interface PdfFeatureProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /** Reference to the container element for calculating relative positions */
   containerRef: RefObject<HTMLDivElement | null>;
+  /** Whether analytics are enabled (optional for non-analytics features) */
+  isAnalyticsEnabled?: boolean;
+  /** Currently selected analytics type (optional for non-analytics features) */
+  selectedAnalyticsType?: string;
 }
 
 /**

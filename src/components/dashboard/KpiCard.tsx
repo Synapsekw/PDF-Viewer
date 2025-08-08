@@ -42,7 +42,7 @@ const StyledCard = styled(Card)`
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  height: 450px;
+  height: 280px;
   padding: ${theme.spacing[6]};
   
   &::before {
@@ -84,12 +84,12 @@ const IconWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: ${theme.borderRadius.xl};
   color: rgba(255, 255, 255, 0.9);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -114,7 +114,7 @@ const Title = styled.h3`
 
 const Value = styled.div`
   color: #ffffff;
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: ${theme.typography.fontWeight.bold};
   margin-bottom: ${theme.spacing[3]};
   line-height: 1.1;
@@ -207,8 +207,8 @@ const SkeletonTitle = styled.div`
 `;
 
 const SkeletonIcon = styled.div`
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
