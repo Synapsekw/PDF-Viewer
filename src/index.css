@@ -14,8 +14,20 @@ html, body {
 /* PDF.js text layer defaults */
 .textLayer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1;
+  user-select: text;
   pointer-events: auto;
+  z-index: 5;
+}
+
+.textLayer span {
+  color: transparent;
   user-select: text;
 }
 

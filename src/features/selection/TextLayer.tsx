@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useCallback } from 'react'
 import type { PageTransform, SelectionEvent } from './types'
 import { emitSelection } from './useSelectionAnalytics'
-import { renderTextLayer } from 'pdfjs-dist/web/pdf_viewer.js'
+import * as pdfjsLib from 'pdfjs-dist'
 
 type Props = {
   page: any // PDFPageProxy
@@ -42,23 +42,24 @@ export function TextLayer({ page, pageIndex, transform, className }: Props) {
         })
         if (cancelled) return
 
-        const result = await renderTextLayer({
-          textContentSource: textContent,
-          container,
-          viewport,
-          textDivs: [],
-          timeout: 0,
-          enhanceTextSelection: true,
-        })
-
-        // Make the text invisible but selectable
-        container.querySelectorAll('span').forEach((el) => {
-          (el as HTMLElement).style.opacity = '0'
+        // Create text spans manually
+        textContent.items.forEach((item: any, index: number) => {
+          const span = document.createElement('span')
+          span.textContent = item.str
+          span.style.position = 'absolute'
+          span.style.left = `${item.transform[4]}px`
+          span.style.top = `${item.transform[5]}px`
+          span.style.fontSize = `${Math.abs(item.transform[0])}px`
+          span.style.fontFamily = item.fontName || 'sans-serif'
+          span.style.color = 'transparent'
+          span.style.userSelect = 'text'
+          span.style.pointerEvents = 'auto'
+          container.appendChild(span)
         })
 
         // Debug: log rendered spans
         // eslint-disable-next-line no-console
-        console.log('[TextLayer] rendered spans:', container.querySelectorAll('span').length, 'result=', result)
+        console.log('[TextLayer] rendered spans:', container.querySelectorAll('span').length)
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('[TextLayer] render failed', err)
