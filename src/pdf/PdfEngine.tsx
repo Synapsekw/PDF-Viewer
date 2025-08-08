@@ -3,6 +3,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
 import { TextLayer } from '@/features/selection/TextLayer';
 
+// Debug: Check if this file is being loaded
+console.log('[PdfEngine] File loaded with debug logs');
+
 const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
 type PDFPageProxy = pdfjsLib.PDFPageProxy;
@@ -50,6 +53,8 @@ interface PdfEngineProps {
 export const PdfEngine: React.FC<PdfEngineProps> = ({
   canvasRef: externalCanvasRef,
 }) => {
+  console.log('[PdfEngine] Component rendered');
+  
   const { file, currentPage, scale, rotation, setDocument } = usePdf();
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
@@ -147,6 +152,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
   // Function to render a page
   const renderPage = async (pageNum: number, pageScale: number, pageRotation: number) => {
     console.log('[PdfEngine] renderPage called with:', { pageNum, pageScale, pageRotation });
+    console.log('[PdfEngine] renderPage - this is the debug version');
     
     if (!pdfDocument || !canvasRef.current) {
       console.log('[PdfEngine] renderPage early return - no pdfDocument or canvasRef');
