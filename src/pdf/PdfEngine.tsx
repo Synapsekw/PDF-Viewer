@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
+import { TextLayer } from '../features/selection/TextLayer';
 
 const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
@@ -58,6 +59,18 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   
   const canvasRef = externalCanvasRef || internalCanvasRef;
+  
+  // Computed viewport for current page to size the wrapper
+  const currentViewport = useMemo(() => {
+    if (!currentPageObj) return null;
+    const effectiveScale = scale || 1;
+    const effectiveRotation = rotation || 0;
+    try {
+      return currentPageObj.getViewport({ scale: effectiveScale, rotation: effectiveRotation });
+    } catch {
+      return null;
+    }
+  }, [currentPageObj, scale, rotation]);
 
   // Load PDF document
   useEffect(() => {
@@ -285,7 +298,27 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     return () => clearTimeout(timeoutId);
   }, [pdfDocument, currentPage, scale, rotation]);
 
-  return <canvas ref={canvasRef} />;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: currentViewport ? currentViewport.width : undefined,
+        height: currentViewport ? currentViewport.height : undefined,
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+      />
+      {currentPageObj && (
+        <TextLayer
+          page={currentPageObj}
+          pageIndex={(currentPage || 1) - 1}
+          transform={{ scale: scale || 1, rotation: rotation || 0 }}
+        />
+      )}
+    </div>
+  );
 };
 
 export default PdfEngine;
