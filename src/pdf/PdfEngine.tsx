@@ -146,7 +146,10 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
   // Function to render a page
   const renderPage = async (pageNum: number, pageScale: number, pageRotation: number) => {
+    console.log('[PdfEngine] renderPage called with:', { pageNum, pageScale, pageRotation });
+    
     if (!pdfDocument || !canvasRef.current) {
+      console.log('[PdfEngine] renderPage early return - no pdfDocument or canvasRef');
       return;
     }
 
@@ -171,7 +174,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
       // Load new page
       const newPage = await pdfDocument.getPage(pageNum);
-      console.log('[PdfEngine] Setting currentPageObj:', !!newPage);
+      console.log('[PdfEngine] Setting currentPageObj:', !!newPage, 'pageNum:', pageNum);
       setCurrentPageObj(newPage);
 
       // Calculate viewport
@@ -307,10 +310,16 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
   // Render page when page number, scale, or rotation changes
   useEffect(() => {
-    if (!pdfDocument || !currentPage) return;
+    console.log('[PdfEngine] useEffect triggered:', { pdfDocument: !!pdfDocument, currentPage, scale, rotation });
+    
+    if (!pdfDocument || !currentPage) {
+      console.log('[PdfEngine] useEffect early return - no pdfDocument or currentPage');
+      return;
+    }
     
     // Add debouncing to prevent rapid re-renders during zoom
     const timeoutId = setTimeout(() => {
+      console.log('[PdfEngine] useEffect calling renderPage');
       renderPage(currentPage, scale || 1, rotation || 0);
     }, 100);
     
