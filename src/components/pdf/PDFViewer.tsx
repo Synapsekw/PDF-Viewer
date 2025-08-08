@@ -540,28 +540,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         className="hidden"
       />
       
-      {/* Debug element to check if PDFViewer is rendering */}
-      <div style={{
-        position: 'absolute',
-        top: '0px',
-        right: '0px',
-        padding: '10px',
-        backgroundColor: 'purple',
-        color: 'white',
-        zIndex: 1000,
-        fontSize: '14px',
-      }}>
-        PDFViewer Debug - Doc: {document ? 'YES' : 'NO'}
-      </div>
+
 
       {/* Always render canvas for analytics features, but hide it when no document */}
       <div style={{ 
         display: document ? 'block' : 'none',
         width: '100%',
         height: '100%',
-        overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 0, 0.1)', // Yellow background for debugging
-        border: '2px solid orange', // Orange border for debugging
+        overflow: 'hidden'
       }}>
         <CanvasWrapper>
           <PdfEngine canvasRef={canvasRef} />

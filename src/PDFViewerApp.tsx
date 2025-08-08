@@ -63,19 +63,7 @@ const PDFViewerAppContent: React.FC = () => {
         onToggleAnalytics={handleAnalyticsButtonClick}
         isAnalyticsEnabled={isAnalyticsEnabled}
       >
-        {/* Debug element to check if PDFViewerApp is rendering */}
-        <div style={{
-          position: 'absolute',
-          top: '0px',
-          right: '50px',
-          padding: '5px',
-          backgroundColor: 'orange',
-          color: 'black',
-          zIndex: 1002,
-          fontSize: '12px',
-        }}>
-          PDFViewerApp Debug
-        </div>
+
         
         <PDFViewerWithFeatures 
           onFileUpload={handleFileUpload}

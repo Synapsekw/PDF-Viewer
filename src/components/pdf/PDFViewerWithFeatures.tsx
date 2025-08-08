@@ -47,19 +47,7 @@ export const PDFViewerWithFeatures: React.FC<PDFViewerWithFeaturesProps> = ({
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* Debug element to check if PDFViewerWithFeatures is rendering */}
-      <div style={{
-        position: 'absolute',
-        top: '0px',
-        left: '0px',
-        padding: '5px',
-        backgroundColor: 'cyan',
-        color: 'black',
-        zIndex: 1001,
-        fontSize: '12px',
-      }}>
-        PDFViewerWithFeatures Debug
-      </div>
+
       
       <PDFViewer 
         onToggleOutline={onToggleOutline} 

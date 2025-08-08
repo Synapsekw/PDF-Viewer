@@ -9,57 +9,10 @@ interface AppShellProps {
 
 const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const { collapsed, isMobile, isOpen, openDrawer, closeDrawer } = useSidebar();
-  
-  // Direct DOM manipulation debug
-  React.useEffect(() => {
-    const debugElement = document.createElement('div');
-    debugElement.innerHTML = 'DIRECT DOM DEBUG: AppShell mounted!';
-    debugElement.style.cssText = `
-      position: fixed !important;
-      top: 0px !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      width: 400px !important;
-      height: 60px !important;
-      background: red !important;
-      color: white !important;
-      z-index: 999999 !important;
-      font-size: 16px !important;
-      padding: 20px !important;
-      border: 5px solid yellow !important;
-      font-weight: bold !important;
-      text-align: center !important;
-    `;
-    document.body.appendChild(debugElement);
-    
-    console.log('🔥 AppShell: Direct DOM debug element added');
-    
-    return () => {
-      if (document.body.contains(debugElement)) {
-        document.body.removeChild(debugElement);
-      }
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-inter">
-      {/* SUPER HIGH Z-INDEX DEBUG */}
-      <div style={{
-        position: 'fixed',
-        top: '100px',
-        right: '10px',
-        width: '300px',
-        height: '80px',
-        backgroundColor: 'magenta',
-        color: 'white',
-        zIndex: 99999,
-        fontSize: '14px',
-        padding: '10px',
-        border: '3px solid lime',
-        fontWeight: 'bold'
-      }}>
-        APPSHELL DEBUG: This should be visible!
-      </div>
+
       {/* Background gradient overlay with blur effect - matches landing exactly */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
       

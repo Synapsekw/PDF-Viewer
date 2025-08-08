@@ -7,8 +7,6 @@ import Dashboard from './pages/Dashboard';
 import AppShell from './layout/AppShell';
 
 const App: React.FC = () => {
-  console.log('App component rendering');
-  
   return (
     <div>
       <Router>

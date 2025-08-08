@@ -1,85 +1,15 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { usePdf } from './PdfContext';
-import { TextLayer } from '@/features/selection/TextLayer';
 
-// Simple text layer component for text selection
-const SimpleTextLayer: React.FC<{ page: any; viewport: any; pageIndex: number }> = ({ page, viewport, pageIndex }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const loadText = async () => {
-      if (!containerRef.current) return;
-      
-      const container = containerRef.current;
-      container.innerHTML = ''; // Clear previous content
-      
-      try {
-        // Get text content from PDF
-        const textContent = await page.getTextContent();
-        
-        // Create spans for each text item
-        textContent.items.forEach((item: any) => {
-          const span = document.createElement('span');
-          span.textContent = item.str;
-          span.style.position = 'absolute';
-          span.style.left = `${item.transform[4]}px`;
-          span.style.top = `${viewport.height - item.transform[5]}px`; // Flip Y coordinate
-          span.style.fontSize = `${item.transform[0]}px`;
-          span.style.color = 'transparent';
-          span.style.userSelect = 'text';
-          span.style.pointerEvents = 'auto';
-          container.appendChild(span);
-        });
-        
-        console.log('[SimpleTextLayer] Rendered', textContent.items.length, 'text items');
-      } catch (error) {
-        console.error('[SimpleTextLayer] Error loading text:', error);
-      }
-    };
-
-    loadText();
-  }, [page, viewport]);
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 5,
-        pointerEvents: 'auto',
-        userSelect: 'text',
-      }}
-      onMouseUp={() => {
-        const selection = window.getSelection();
-        if (selection && !selection.isCollapsed) {
-          console.log('[SimpleTextLayer] Selected text:', selection.toString());
-        }
-      }}
-    />
-  );
-};
 
 const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
 type PDFPageProxy = pdfjsLib.PDFPageProxy;
 
-// Configure PDF.js worker (using local copy)
-// In Vite, we need to use the full path including the base URL
+// Configure PDF.js worker
 GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
-console.log('PdfEngine: Worker source set to:', GlobalWorkerOptions.workerSrc);
-
-// Test worker availability
-if (typeof window !== 'undefined') {
-  fetch('/pdfjs/pdf.worker.min.js')
-    .then(response => {
-      console.log('PdfEngine: Worker file accessible:', response.ok);
-    })
-    .catch(error => {
-      console.error('PdfEngine: Worker file not accessible:', error);
-    });
-}
 
 /**
  * Props for the PdfEngine component.
@@ -108,8 +38,6 @@ interface PdfEngineProps {
 export const PdfEngine: React.FC<PdfEngineProps> = ({
   canvasRef: externalCanvasRef,
 }) => {
-  console.log('[PdfEngine] Component rendered');
-  
   const { file, currentPage, scale, rotation, setDocument } = usePdf();
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
@@ -122,52 +50,23 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
   
   // Computed viewport for current page to size the wrapper
   const currentViewport = useMemo(() => {
-    if (!currentPageObj) {
-      console.log('[PdfEngine] currentViewport: no currentPageObj');
-      return null;
-    }
+    if (!currentPageObj) return null;
     const effectiveScale = scale || 1;
     const effectiveRotation = rotation || 0;
     try {
-      const viewport = currentPageObj.getViewport({ scale: effectiveScale, rotation: effectiveRotation });
-      console.log('[PdfEngine] currentViewport calculated:', {
-        width: viewport.width,
-        height: viewport.height,
-        scale: effectiveScale,
-        rotation: effectiveRotation
-      });
-      return viewport;
-    } catch (error) {
-      console.error('[PdfEngine] currentViewport error:', error);
+      return currentPageObj.getViewport({ scale: effectiveScale, rotation: effectiveRotation });
+    } catch {
       return null;
     }
   }, [currentPageObj, scale, rotation]);
 
   // Load PDF document
   useEffect(() => {
-    console.log('PdfEngine: File changed, file type:', typeof file, 'file instanceof Uint8Array:', file instanceof Uint8Array);
-    if (!file) {
-      console.log('PdfEngine: No file provided, returning');
-      return;
-    }
+    if (!file) return;
 
     const loadDocument = async () => {
       try {
-        console.log('PdfEngine: Starting to load PDF document...');
-        
-        // Ensure we have a fresh copy of the data for PDF.js
-        let pdfData;
-        if (file instanceof Uint8Array) {
-          console.log('PdfEngine: File is Uint8Array, length:', file.length);
-          // Create a new Uint8Array from the existing one to avoid transfer issues
-          pdfData = new Uint8Array(file);
-          console.log('PdfEngine: Created new Uint8Array, length:', pdfData.length);
-        } else {
-          console.log('PdfEngine: File is not Uint8Array, using as-is');
-          pdfData = file;
-        }
-        
-        console.log('PdfEngine: About to call getDocument with data length:', pdfData.length);
+        const pdfData = file instanceof Uint8Array ? new Uint8Array(file) : file;
         const document = await getDocument({
           data: pdfData,
           cMapUrl: '/pdfjs/cmaps/',
@@ -177,18 +76,10 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
           disableStream: false,
         }).promise;
         
-        console.log('PdfEngine: PDF document loaded successfully, pages:', document.numPages);
         setPdfDocument(document);
         setDocument(document);
       } catch (error) {
-        console.error('PdfEngine: Failed to load PDF:', error);
-        if (error instanceof Error) {
-          console.error('PdfEngine: Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        }
+        console.error('Failed to load PDF:', error);
       }
     };
 
@@ -251,7 +142,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (!context) {
-        console.error('PdfEngine: Failed to get canvas context');
+
         isRenderingRef.current = false;
         return;
       }
@@ -263,20 +154,20 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
       const offscreenCanvas = offscreenCanvasRef.current;
       const offscreenContext = offscreenCanvas.getContext('2d');
       if (!offscreenContext) {
-        console.error('PdfEngine: Failed to get offscreen canvas context');
+
         isRenderingRef.current = false;
         return;
       }
 
       // Set canvas dimensions to match viewport
-      console.log('PdfEngine: Setting canvas dimensions:', viewport.width, 'x', viewport.height, 'scale:', pageScale);
+
       
       // Check for browser canvas size limits (most browsers limit to ~16,777,216 pixels)
       const maxCanvasSize = 16384; // Conservative limit
       let renderScale = 1.0;
       
       if (viewport.width > maxCanvasSize || viewport.height > maxCanvasSize) {
-        console.warn('PdfEngine: Canvas size exceeds browser limits:', viewport.width, 'x', viewport.height);
+
         // Calculate scale factor to fit within limits
         renderScale = Math.min(maxCanvasSize / viewport.width, maxCanvasSize / viewport.height);
         const finalWidth = Math.floor(viewport.width * renderScale);
@@ -288,7 +179,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         offscreenCanvas.width = finalWidth;
         offscreenCanvas.height = finalHeight;
         
-        console.log('PdfEngine: Using render scale:', renderScale, 'canvas size:', finalWidth, 'x', finalHeight);
+
       } else {
         const finalWidth = viewport.width;
         const finalHeight = viewport.height;
@@ -327,7 +218,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
       offscreenContext.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
 
       // Render PDF page to offscreen canvas
-      console.log('PdfEngine: About to render page to offscreen canvas with render scale:', renderScale);
+
       
       // Create a scaled viewport if needed
       const renderViewport = renderScale !== 1.0 
@@ -343,13 +234,9 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
       // Now copy the rendered content to the visible canvas
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.drawImage(offscreenCanvas, 0, 0);
-      console.log('PdfEngine: Page rendered successfully');
-      console.log('[PdfEngine] After render - currentPageObj:', !!currentPageObj, 'currentViewport:', !!currentViewport);
+
       
-      // Debug: Check if canvas has content
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const hasContent = imageData.data.some(pixel => pixel !== 0);
-      console.log('PdfEngine: Canvas has content:', hasContent, 'canvas dimensions:', canvas.width, 'x', canvas.height);
+
 
       isRenderingRef.current = false;
 
@@ -371,50 +258,18 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
   // Render page when page number, scale, or rotation changes
   useEffect(() => {
-    console.log('[PdfEngine] useEffect triggered:', { pdfDocument: !!pdfDocument, currentPage, scale, rotation });
-    
-    if (!pdfDocument || !currentPage) {
-      console.log('[PdfEngine] useEffect early return - no pdfDocument or currentPage');
-      return;
-    }
+    if (!pdfDocument || !currentPage) return;
     
     // Add debouncing to prevent rapid re-renders during zoom
     const timeoutId = setTimeout(() => {
-      console.log('[PdfEngine] useEffect calling renderPage');
+      
       renderPage(currentPage, scale || 1, rotation || 0);
     }, 100);
     
     return () => clearTimeout(timeoutId);
   }, [pdfDocument, currentPage, scale, rotation]);
 
-  // Debug logging for TextLayer rendering - use useEffect to track state changes
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[PdfEngine] State changed:', {
-      currentPageObj: !!currentPageObj,
-      currentViewport: !!currentViewport,
-      currentPage,
-      scale,
-      rotation
-    })
 
-    const shouldRenderTextLayer = currentPageObj && currentViewport
-    if (!shouldRenderTextLayer) {
-      // eslint-disable-next-line no-console
-      console.log('[PdfEngine] TextLayer not rendered because:', {
-        currentPageObj: !!currentPageObj,
-        currentViewport: !!currentViewport,
-        currentPage,
-        scale,
-        rotation
-      })
-    } else {
-      // eslint-disable-next-line no-console
-      console.log('[PdfEngine] TextLayer should be rendered')
-    }
-  }, [currentPageObj, currentViewport, currentPage, scale, rotation])
-
-  const shouldRenderTextLayer = currentPageObj && currentViewport
 
   return (
     <div
@@ -428,22 +283,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
-      {/* Text selection layer - render only when PDF is loaded */}
-      {currentPageObj && currentViewport && (
-        <SimpleTextLayer 
-          page={currentPageObj} 
-          viewport={currentViewport}
-          pageIndex={(currentPage || 1) - 1}
-        />
-      )}
-      
-      {shouldRenderTextLayer && (
-        <TextLayer
-          page={currentPageObj}
-          pageIndex={(currentPage || 1) - 1}
-          transform={{ scale: scale || 1, rotation: rotation || 0 }}
-        />
-      )}
+
     </div>
   );
 };
