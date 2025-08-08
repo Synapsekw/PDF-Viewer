@@ -308,6 +308,19 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     rotation
   })
 
+  // Check if TextLayer should be rendered
+  const shouldRenderTextLayer = currentPageObj && currentViewport
+  if (!shouldRenderTextLayer) {
+    // eslint-disable-next-line no-console
+    console.log('[PdfEngine] TextLayer not rendered because:', {
+      currentPageObj: !!currentPageObj,
+      currentViewport: !!currentViewport,
+      currentPage,
+      scale,
+      rotation
+    })
+  }
+
   return (
     <div
       style={{
@@ -320,7 +333,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}
       />
-      {currentPageObj && currentViewport && (
+      {shouldRenderTextLayer && (
         <TextLayer
           page={currentPageObj}
           pageIndex={(currentPage || 1) - 1}
