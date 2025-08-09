@@ -1,0 +1,169 @@
+/* Import Inter and Poppins fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Toast animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Ensure consistent background across all pages */
+html, body {
+  background: linear-gradient(135deg, #0f172a 0%, #334155 50%, #0f172a 100%);
+  min-height: 100vh;
+}
+
+/* AppShell sidebar width CSS variables */
+:root {
+  --sidebar-w-expanded: 280px;
+  --sidebar-w-collapsed: 72px;
+  --sidebar-w: var(--sidebar-w-expanded);
+}
+
+/* Custom glassmorphic utilities */
+@layer utilities {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-xl;
+  }
+  
+  .glass-button {
+    @apply backdrop-blur-md bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all duration-200;
+  }
+  
+  .glass-input {
+    @apply backdrop-blur-md bg-white/5 border border-white/20 rounded-lg focus:border-white/40 transition-all duration-200;
+  }
+}
+
+/* Modal overlay styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Enhanced Mouse Heatmap Styles */
+.mouse-heatmap {
+  filter: drop-shadow(0 0 10px rgba(255, 100, 100, 0.3));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mouse-heatmap canvas {
+  backdrop-filter: blur(1px);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 20px rgba(255, 100, 100, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Heatmap intensity indicators */
+.heatmap-intensity-high {
+  background: radial-gradient(circle, rgba(255, 80, 80, 0.8) 0%, rgba(255, 80, 80, 0.2) 70%, transparent 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.heatmap-intensity-medium {
+  background: radial-gradient(circle, rgba(255, 150, 50, 0.6) 0%, rgba(255, 150, 50, 0.2) 70%, transparent 100%);
+}
+
+.heatmap-intensity-low {
+  background: radial-gradient(circle, rgba(100, 150, 255, 0.4) 0%, rgba(100, 150, 255, 0.1) 70%, transparent 100%);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Smooth transitions for heatmap elements */
+.heatmap-cell {
+  transition: all 0.2s ease-out;
+  border-radius: 2px;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(255, 100, 100, 0.4);
+}
+
+/* Analytics overlay enhancements */
+.analytics-overlay {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Heatmap legend styles */
+.heatmap-legend {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.heatmap-legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.heatmap-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Performance optimizations for heatmap rendering */
+.heatmap-optimized {
+  will-change: transform, opacity;
+  contain: layout style paint;
+}
+
+/* Glass morphism effect for heatmap container */
+.heatmap-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}

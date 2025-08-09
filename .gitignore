@@ -1,0 +1,16 @@
+# deps & builds
+node_modules/
+dist/
+build/
+
+# logs & cache
+*.log
+.cache/
+coverage/
+
+# env & OS/editor noise
+.env
+.env.*.local
+.DS_Store
+.vscode/
+
