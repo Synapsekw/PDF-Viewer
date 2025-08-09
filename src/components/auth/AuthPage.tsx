@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { Button } from '../ui/Button';
@@ -6,6 +6,8 @@ import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
 import { FaGoogle, FaApple } from 'react-icons/fa';
 import { MdEmail, MdLock, MdArrowBack } from 'react-icons/md';
+import { SupabaseClientManager } from '../../lib/supabase/client';
+import { repositoryManager } from '../../lib/repositories/RepositoryManager';
 import theme from '../../theme';
 
 const AuthContainer = styled.div`
@@ -166,26 +168,138 @@ const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [useSupabaseAuth, setUseSupabaseAuth] = useState(false);
+
+  // Check if Supabase is available on mount
+  useEffect(() => {
+    const supabase = SupabaseClientManager.getClient();
+    if (supabase) {
+      setUseSupabaseAuth(true);
+      
+      // Check if user is already logged in
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          navigate('/dashboard');
+        }
+      });
+
+      // Listen for auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Initialize repositories in Supabase mode
+          repositoryManager.configure({ mode: 'supabase' });
+          navigate('/dashboard');
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // For development: immediately navigate to dashboard regardless of credentials
-    setTimeout(() => {
+    if (!useSupabaseAuth) {
+      // Development mode - skip auth
+      setTimeout(() => {
+        setIsLoading(false);
+        repositoryManager.configure({ mode: 'local' });
+        navigate('/dashboard');
+      }, 500);
+      return;
+    }
+
+    try {
+      const supabase = SupabaseClientManager.getClient();
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      let result;
+      if (mode === 'signin') {
+        result = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+      } else {
+        result = await supabase.auth.signUp({
+          email,
+          password
+        });
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (mode === 'signup' && !result.data.session) {
+        setError('Please check your email for verification link');
+      }
+
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      setError(err.message || 'Authentication failed');
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    if (!useSupabaseAuth) {
       navigate('/dashboard');
-    }, 500); // Reduced delay for faster development
+      return;
+    }
+
+    try {
+      const supabase = SupabaseClientManager.getClient();
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) {
+        setError(error.message);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google authentication failed');
+    }
   };
 
-  const handleGoogleAuth = () => {
-    // For development: immediately navigate to dashboard
-    navigate('/dashboard');
-  };
+  const handleAppleAuth = async () => {
+    if (!useSupabaseAuth) {
+      navigate('/dashboard');
+      return;
+    }
 
-  const handleAppleAuth = () => {
-    // For development: immediately navigate to dashboard
-    navigate('/dashboard');
+    try {
+      const supabase = SupabaseClientManager.getClient();
+      if (!supabase) {
+        throw new Error('Supabase client not available');
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) {
+        setError(error.message);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Apple authentication failed');
+    }
   };
 
   const handleBackToHome = () => {
@@ -208,8 +322,20 @@ const AuthPage: React.FC = () => {
         <AuthCard>
         <AuthHeader>
           <Logo src="/Spectra.png" alt="Spectra Logo" />
-          <Title>Welcome Back</Title>
-          <Subtitle>Sign in to continue to your PDF viewer</Subtitle>
+          <Title>{mode === 'signin' ? 'Welcome Back' : 'Create Account'}</Title>
+          <Subtitle>
+            {mode === 'signin' 
+              ? (useSupabaseAuth ? 'Sign in to continue' : 'Continue to PDF viewer') 
+              : 'Join Spectra to get started'
+            }
+          </Subtitle>
+          {!useSupabaseAuth && (
+            <div style={{ marginTop: '8px', padding: '4px 8px', background: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '4px' }}>
+              <p style={{ fontSize: '12px', color: '#ffc107', margin: 0 }}>
+                Development Mode - No authentication required
+              </p>
+            </div>
+          )}
         </AuthHeader>
 
         <Form onSubmit={handleSubmit}>
@@ -239,14 +365,52 @@ const AuthPage: React.FC = () => {
             />
           </FormGroup>
 
+          {error && (
+            <div style={{ 
+              padding: '12px', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', 
+              borderRadius: '8px',
+              color: '#ef4444',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           <Button
             type="submit"
             variant="primary"
             fullWidth
             disabled={isLoading}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading 
+              ? (mode === 'signin' ? 'Signing in...' : 'Creating account...') 
+              : (mode === 'signin' ? 'Sign In' : 'Create Account')
+            }
           </Button>
+
+          {useSupabaseAuth && (
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: theme.colors.text.secondary,
+                  fontSize: theme.typography.fontSize.sm,
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+              >
+                {mode === 'signin' 
+                  ? "Don't have an account? Sign up" 
+                  : "Already have an account? Sign in"
+                }
+              </button>
+            </div>
+          )}
         </Form>
 
         <SocialLoginSection>

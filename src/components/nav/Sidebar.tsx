@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useSidebar } from '../../hooks/useSidebar';
-import { LayoutDashboard, FileText, Menu, ChevronLeft, Settings, User, Library, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FileText, Menu, ChevronLeft, Settings, User, Library, BarChart3, Home, Shield } from 'lucide-react';
 import NavItem from './NavItem';
 import SidebarSection from './SidebarSection';
 import { getNavBadges } from '../../lib/nav/mockNavBadges';
+
+// Import debug script in development
+if (process.env.NODE_ENV === 'development') {
+  import('../../scripts/checkAdminStatus').then(module => {
+    (window as any).checkAdminStatus = module.checkCurrentUserAdmin;
+  });
+}
 
 // TODO: Hook real nav items in Step 3.
 // TODO: Refine a11y for drawer focus trapping later.
@@ -12,6 +19,7 @@ import { getNavBadges } from '../../lib/nav/mockNavBadges';
 const Sidebar: React.FC = () => {
   const { collapsed, toggle, isMobile, closeDrawer } = useSidebar();
   const [badges, setBadges] = useState({ documents: 0, questionsNew: 0 });
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const loadBadges = async () => {
@@ -19,7 +27,71 @@ const Sidebar: React.FC = () => {
       setBadges(badgeData);
     };
     loadBadges();
+    checkAdminStatus();
+
+    // Set up auth state listener
+    const setupAuthListener = async () => {
+      const { SupabaseClientManager } = await import('../../lib/supabase/client');
+      const supabase = SupabaseClientManager.getClient();
+      
+      if (supabase) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('🔄 Auth state changed:', event, session?.user?.email);
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            checkAdminStatus();
+          } else if (event === 'SIGNED_OUT') {
+            setIsAdmin(false);
+          }
+        });
+
+        return () => subscription.unsubscribe();
+      }
+    };
+
+    const cleanup = setupAuthListener();
+    return () => {
+      cleanup?.then(fn => fn?.());
+    };
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      console.log('🔍 Checking admin status...');
+      // Import here to avoid circular dependency
+      const { SupabaseClientManager } = await import('../../lib/supabase/client');
+      const supabase = SupabaseClientManager.getClient();
+      
+      if (!supabase) {
+        console.log('❌ No Supabase client available');
+        return;
+      }
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user?.email, 'Error:', authError);
+      
+      if (!user) {
+        console.log('❌ No authenticated user');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle(); // Use maybeSingle to avoid error on no rows
+
+      console.log('👤 Profile data:', profile, 'Error:', profileError);
+
+      if (profile) {
+        const settings = profile.settings as any || {};
+        const isAdminUser = settings.role === 'admin' || settings.permissions?.includes('admin');
+        console.log('⚡ Settings:', settings, 'Is Admin:', isAdminUser);
+        setIsAdmin(isAdminUser);
+      }
+    } catch (error) {
+      console.warn('Failed to check admin status:', error);
+    }
+  };
 
   return (
     <nav 
@@ -53,6 +125,13 @@ const Sidebar: React.FC = () => {
       <div className={`flex-1 overflow-y-auto p-4 ${collapsed ? 'flex flex-col items-center space-y-4' : 'space-y-6'}`}>
         {/* TODO: Hook real nav items in Step 3. */}
         <SidebarSection title="Main" collapsed={collapsed}>
+          <NavItem
+            icon={<Home className="w-5 h-5" />}
+            label="Home"
+            href="/"
+            collapsed={collapsed}
+            onClick={isMobile ? closeDrawer : undefined}
+          />
           <NavItem
             icon={<LayoutDashboard className="w-5 h-5" />}
             label="Dashboard"
@@ -99,6 +178,33 @@ const Sidebar: React.FC = () => {
             onClick={isMobile ? closeDrawer : undefined}
           />
         </SidebarSection>
+
+        {/* Admin Section - Only visible to admin users */}
+        {(isAdmin || process.env.NODE_ENV === 'development') && (
+          <SidebarSection title="Admin" collapsed={collapsed}>
+            <NavItem
+              icon={<Shield className="w-5 h-5" />}
+              label={isAdmin ? "Admin Panel" : "Admin Panel (Dev)"}
+              href="/admin"
+              collapsed={collapsed}
+              onClick={isMobile ? closeDrawer : undefined}
+            />
+          </SidebarSection>
+        )}
+
+        {/* Debug info in development */}
+        {process.env.NODE_ENV === 'development' && !collapsed && (
+          <div className="mt-auto p-2 text-xs text-slate-400 border-t border-slate-700">
+            <div>Admin Status: {isAdmin ? '✅ Yes' : '❌ No'}</div>
+            <div>Dev Mode: ✅ Active</div>
+            <button 
+              onClick={checkAdminStatus}
+              className="mt-1 px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-500"
+            >
+              Recheck Admin
+            </button>
+          </div>
+        )}
 
         {/* TODO: Add future sections here */}
       </div>

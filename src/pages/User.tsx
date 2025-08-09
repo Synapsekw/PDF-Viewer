@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User as UserIcon, Mail, Bell, Shield, Globe, Settings } from 'lucide-react';
+import { User as UserIcon, Mail, Bell, Shield, Globe, Settings, Database } from 'lucide-react';
 import { useTheme } from '../theme/ThemeProvider';
 import { ThemeSelector } from '../features/user/components/ThemeSelector';
 import { ToggleSetting } from '../features/user/components/ToggleSetting';
@@ -8,6 +8,8 @@ import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { UserProfile, UserSettings } from '../features/user/types';
 import { useAnalytics } from '../contexts/AnalyticsContext';
+import { BackupPanel } from '../components/backup/BackupPanel';
+import { Button } from '../components/ui';
 
 // Mock user data - replace with actual API/auth data
 const mockUserProfile: UserProfile = {
@@ -31,6 +33,7 @@ const User: React.FC = () => {
   const { setCurrentTheme } = useTheme();
   const { toast, showToast, hideToast } = useToast();
   const { setAnalyticsEnabled } = useAnalytics();
+  const [showBackupPanel, setShowBackupPanel] = useState(false);
   
   // Initialize settings from localStorage or defaults
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -216,7 +219,43 @@ const User: React.FC = () => {
             </section>
           </div>
         </div>
+
+        {/* Data Management Section */}
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-lg p-6 border border-slate-700/50">
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Data Management
+          </h2>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+              <div>
+                <h3 className="text-white font-medium">Backup & Migration</h3>
+                <p className="text-slate-400 text-sm">Export your data, set up cloud storage, and manage migrations</p>
+              </div>
+              <Button 
+                onClick={() => setShowBackupPanel(true)}
+                className="flex items-center gap-2"
+              >
+                <Database className="w-4 h-4" />
+                Manage Data
+              </Button>
+            </div>
+            
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="text-sm text-blue-300">
+                <p className="font-medium">🚀 Migration to Supabase - Phase 1 Ready</p>
+                <p className="text-blue-400 mt-1">Backup system and cloud foundation are now available. Click "Manage Data" to get started!</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Backup Panel Modal */}
+      {showBackupPanel && (
+        <BackupPanel onClose={() => setShowBackupPanel(false)} />
+      )}
 
       {/* Toast Notification */}
       {toast.isVisible && (

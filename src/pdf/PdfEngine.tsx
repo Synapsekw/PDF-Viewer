@@ -6,19 +6,30 @@ const { getDocument, GlobalWorkerOptions } = pdfjsLib;
 type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
 type PDFPageProxy = pdfjsLib.PDFPageProxy;
 
-// Configure PDF.js worker (using local copy)
-// In Vite, we need to use the full path including the base URL
-GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
-console.log('PdfEngine: Worker source set to:', GlobalWorkerOptions.workerSrc);
+// Configure PDF.js worker
+// Use dynamic import for better Vite compatibility
+try {
+  // Try to use the CDN worker first as it's more reliable
+  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  
+  console.log('PdfEngine: Worker source set to:', GlobalWorkerOptions.workerSrc);
+  console.log('PdfEngine: PDF.js version:', pdfjsLib.version);
+  console.log('PdfEngine: PDF.js build:', pdfjsLib.build);
+  console.log('PdfEngine: Worker options:', GlobalWorkerOptions);
+  console.log('PdfEngine: getDocument function available:', typeof getDocument);
+} catch (error) {
+  console.error('PdfEngine: PDF.js library initialization error:', error);
+  console.error('PdfEngine: This indicates a fundamental issue with PDF.js import');
+}
 
 // Test worker availability (only in development)
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  fetch('/pdfjs/pdf.worker.min.js')
+  fetch(GlobalWorkerOptions.workerSrc)
     .then(response => {
-      console.log('PdfEngine: Worker file accessible:', response.ok);
+      console.log('PdfEngine: CDN Worker file accessible:', response.ok);
     })
     .catch(error => {
-      console.error('PdfEngine: Worker file not accessible:', error);
+      console.error('PdfEngine: CDN Worker file not accessible:', error);
     });
 }
 
@@ -85,7 +96,9 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         }
         
         console.log('PdfEngine: About to call getDocument with data length:', pdfData.length);
-        const document = await getDocument({
+        console.log('PdfEngine: Worker source:', GlobalWorkerOptions.workerSrc);
+        
+        const loadingTask = getDocument({
           data: pdfData,
           cMapUrl: '/pdfjs/cmaps/',
           cMapPacked: true,
@@ -97,7 +110,14 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
           useSystemFonts: true, // Use system fonts when possible
           maxImageSize: 16777216, // 16MB limit for images
           isEvalSupported: false, // Disable eval for security and performance
-        }).promise;
+        });
+        
+        // Add progress tracking for debugging
+        loadingTask.onProgress = (progress: any) => {
+          console.log('PdfEngine: Loading progress:', progress);
+        };
+        
+        const document = await loadingTask.promise;
         
         console.log('PdfEngine: PDF document loaded successfully, pages:', document.numPages);
         setPdfDocument(document);
@@ -108,8 +128,24 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
           console.error('PdfEngine: Error details:', {
             name: error.name,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
+            workerSrc: GlobalWorkerOptions.workerSrc,
+            fileType: typeof file,
+            fileLength: file instanceof Uint8Array ? file.length : 'unknown'
           });
+          
+          // Check if this is a worker-related error
+          if (error.message.includes('worker') || error.message.includes('Worker')) {
+            console.error('PdfEngine: This appears to be a worker-related error. Checking worker accessibility...');
+            fetch(GlobalWorkerOptions.workerSrc)
+              .then(response => {
+                console.log('PdfEngine: Worker accessibility check:', response.ok ? 'ACCESSIBLE' : 'NOT ACCESSIBLE');
+                console.log('PdfEngine: Worker response status:', response.status);
+              })
+              .catch(workerError => {
+                console.error('PdfEngine: Worker accessibility check failed:', workerError);
+              });
+          }
         }
       }
     };

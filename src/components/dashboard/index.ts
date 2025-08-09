@@ -12,3 +12,4 @@ export { default as WordCloud } from './WordCloud';
 export { default as TopQuestionsTable } from './TopQuestionsTable';
 export { default as PageHeatmapPreview } from './PageHeatmapPreview';
 export { default as PageDropoffChart } from './PageDropoffChart';
+export { RealtimeAnalytics } from './RealtimeAnalytics';

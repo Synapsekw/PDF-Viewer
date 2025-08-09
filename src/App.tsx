@@ -6,12 +6,26 @@ import AppShell from './layout/AppShell';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { ThemeProvider } from './theme/ThemeProvider';
 
+// Initialize Supabase and import development scripts
+import { SupabaseClientManager } from './lib/supabase/client';
+
+// Initialize Supabase with project credentials
+SupabaseClientManager.initializeWithProject();
+
+// Import development scripts
+if (process.env.NODE_ENV === 'development') {
+  import('./scripts/createProfileForUser');
+  import('./scripts/setupAdmin');
+  import('./scripts/fixAdminProfile');
+}
+
 // Lazy load heavy components for better performance
 const PDFViewerApp = lazy(() => import('./PDFViewerApp'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const User = lazy(() => import('./pages/User'));
 const Library = lazy(() => import('./pages/Library'));
 const Reports = lazy(() => import('./pages/Reports'));
+const Admin = lazy(() => import('./pages/Admin'));
 const PublicLandingRoute = lazy(() => import('./features/publicViewer/PublicLanding'));
 const PublicViewerRoute = lazy(() => import('./features/publicViewer/PublicViewer'));
 
@@ -57,6 +71,11 @@ const App: React.FC = () => {
               <Route path="/reports" element={
                 <AppShell>
                   <Reports />
+                </AppShell>
+              } />
+              <Route path="/admin" element={
+                <AppShell>
+                  <Admin />
                 </AppShell>
               } />
               {/* Public routes - no AppShell wrapper */}

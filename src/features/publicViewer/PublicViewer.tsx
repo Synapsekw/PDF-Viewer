@@ -205,37 +205,81 @@ const PublicViewerContent: React.FC = () => {
       try {
         console.log('PublicViewer: Loading document for token:', token);
         
-        const [meta, url] = await Promise.all([
-          viewerSource.getDocumentMeta(token),
-          viewerSource.getBlobByToken(token)
-        ]);
-
-        console.log('PublicViewer: Got meta and URL:', { meta, url });
-
-        if (!meta || !url) {
+        // Step 1: Get metadata first to validate token
+        console.log('PublicViewer: Step 1 - Getting document metadata...');
+        const meta = await viewerSource.getDocumentMeta(token);
+        if (!meta) {
+          console.error('PublicViewer: Failed to get document metadata');
           setError('Document not found or share link has expired');
           setIsLoading(false);
           return;
         }
-
+        
+        console.log('PublicViewer: Metadata retrieved successfully:', meta);
         setDocumentMeta(meta);
         
-        console.log('PublicViewer: Fetching PDF from URL:', url);
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch PDF: ${response.status}`);
+        // Step 2: Get PDF blob URL
+        console.log('PublicViewer: Step 2 - Getting PDF blob URL...');
+        const url = await viewerSource.getBlobByToken(token);
+        if (!url) {
+          console.error('PublicViewer: Failed to get PDF blob URL');
+          setError('Failed to load document data. The document may no longer be available.');
+          setIsLoading(false);
+          return;
         }
         
-        const arrayBuffer = await response.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        console.log('PublicViewer: PDF loaded, size:', uint8Array.length, 'bytes');
+        console.log('PublicViewer: PDF blob URL retrieved:', url);
         
+        // Step 3: Fetch and convert PDF data
+        console.log('PublicViewer: Step 3 - Fetching PDF data from blob URL...');
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error('PublicViewer: Fetch failed with status:', response.status, response.statusText);
+          throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+        }
+        
+        console.log('PublicViewer: PDF data fetched successfully, content-length:', response.headers.get('content-length'));
+        
+        const arrayBuffer = await response.arrayBuffer();
+        if (arrayBuffer.byteLength === 0) {
+          throw new Error('Received empty PDF data');
+        }
+        
+        const uint8Array = new Uint8Array(arrayBuffer);
+        console.log('PublicViewer: PDF converted to Uint8Array, size:', uint8Array.length, 'bytes');
+        
+        // Validate PDF header
+        if (uint8Array.length < 4 || 
+            uint8Array[0] !== 0x25 || uint8Array[1] !== 0x50 || 
+            uint8Array[2] !== 0x44 || uint8Array[3] !== 0x46) {
+          throw new Error('Invalid PDF file format - file may be corrupted');
+        }
+        
+        console.log('PublicViewer: PDF validation passed, setting file...');
         setFile(uint8Array);
         setIsLoading(false);
+        console.log('PublicViewer: Document loading completed successfully');
 
       } catch (err) {
         console.error('PublicViewer: Failed to load document:', err);
-        setError(`Failed to load document: ${err.message}`);
+        console.error('PublicViewer: Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+        
+        let errorMessage = 'Failed to load document';
+        if (err.message.includes('fetch PDF')) {
+          errorMessage = 'Network error while loading document. Please check your connection and try again.';
+        } else if (err.message.includes('Invalid PDF')) {
+          errorMessage = 'The document appears to be corrupted and cannot be displayed.';
+        } else if (err.message.includes('expired')) {
+          errorMessage = 'This share link has expired or been revoked.';
+        } else {
+          errorMessage = `Failed to load document: ${err.message}`;
+        }
+        
+        setError(errorMessage);
         setIsLoading(false);
       }
     };

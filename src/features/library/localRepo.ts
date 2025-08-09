@@ -10,13 +10,17 @@ const DB_VERSION = 1;
 const STORE_NAME = 'pdfs';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
+// Use CDN worker for better compatibility
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 class LocalLibraryRepository implements LibraryRepository {
-  private dbPromise: Promise<IDBDatabase>;
+  private dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor() {
-    this.dbPromise = this.initDB();
+    // Only initialize database if IndexedDB is available
+    if (typeof indexedDB !== 'undefined') {
+      this.dbPromise = this.initDB();
+    }
   }
 
   private async initDB(): Promise<IDBDatabase> {
@@ -93,6 +97,9 @@ class LocalLibraryRepository implements LibraryRepository {
   }
 
   async add(file: File): Promise<LibraryPDF> {
+    if (!this.dbPromise) {
+      throw new Error('IndexedDB not available');
+    }
     const db = await this.dbPromise;
     const id = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -124,28 +131,47 @@ class LocalLibraryRepository implements LibraryRepository {
   }
 
   async get(id: string): Promise<LibraryPDF | null> {
-    const db = await this.dbPromise;
+    if (!this.dbPromise) {
+      console.error('LocalLibraryRepository: IndexedDB not available for get operation');
+      throw new Error('IndexedDB not available');
+    }
     
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(id);
+    try {
+      const db = await this.dbPromise;
+      console.log('LocalLibraryRepository: Database connection established for get operation');
+    
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(id);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const result = request.result;
-        if (result) {
-          // Convert addedDate back to Date object
-          result.addedDate = new Date(result.addedDate);
-          resolve(result);
-        } else {
-          resolve(null);
-        }
-      };
-    });
+        request.onerror = () => {
+          console.error('LocalLibraryRepository: Error getting PDF from database:', request.error);
+          reject(request.error);
+        };
+        request.onsuccess = () => {
+          const result = request.result;
+          if (result) {
+            // Convert addedDate back to Date object
+            result.addedDate = new Date(result.addedDate);
+            console.log('LocalLibraryRepository: Successfully retrieved PDF:', id, 'blob size:', result.blob?.size);
+            resolve(result);
+          } else {
+            console.log('LocalLibraryRepository: PDF not found in database:', id);
+            resolve(null);
+          }
+        };
+      });
+    } catch (error) {
+      console.error('LocalLibraryRepository: Database connection failed for get operation:', error);
+      throw error;
+    }
   }
 
   async list(): Promise<LibraryPDFMetadata[]> {
+    if (!this.dbPromise) {
+      throw new Error('IndexedDB not available');
+    }
     const db = await this.dbPromise;
     
     return new Promise((resolve, reject) => {
@@ -170,6 +196,9 @@ class LocalLibraryRepository implements LibraryRepository {
   }
 
   async delete(id: string): Promise<void> {
+    if (!this.dbPromise) {
+      throw new Error('IndexedDB not available');
+    }
     const db = await this.dbPromise;
     
     return new Promise((resolve, reject) => {
@@ -183,6 +212,9 @@ class LocalLibraryRepository implements LibraryRepository {
   }
 
   async clear(): Promise<void> {
+    if (!this.dbPromise) {
+      throw new Error('IndexedDB not available');
+    }
     const db = await this.dbPromise;
     
     return new Promise((resolve, reject) => {

@@ -75,26 +75,41 @@ class LocalShareRepository implements ShareRepository {
   }
 
   async resolveToken(token: string): Promise<{ docId: string; meta: ShareMeta } | null> {
-    const db = await this.dbPromise;
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(token);
+    try {
+      console.log('LocalShareRepository: Resolving token:', token);
+      const db = await this.dbPromise;
+      console.log('LocalShareRepository: Database connection established for token resolution');
+      
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(token);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const result = request.result as ShareLink;
-        if (result) {
-          resolve({
-            docId: result.docId,
-            meta: result.meta
-          });
-        } else {
-          resolve(null);
-        }
-      };
-    });
+        request.onerror = () => {
+          console.error('LocalShareRepository: Error resolving token:', request.error);
+          reject(request.error);
+        };
+        request.onsuccess = () => {
+          const result = request.result as ShareLink;
+          if (result) {
+            console.log('LocalShareRepository: Token resolved successfully:', {
+              docId: result.docId,
+              title: result.meta.title
+            });
+            resolve({
+              docId: result.docId,
+              meta: result.meta
+            });
+          } else {
+            console.log('LocalShareRepository: Token not found in database:', token);
+            resolve(null);
+          }
+        };
+      });
+    } catch (error) {
+      console.error('LocalShareRepository: Database connection failed for token resolution:', error);
+      throw error;
+    }
   }
 
   async listShares(): Promise<Array<{ token: string; meta: ShareMeta }>> {

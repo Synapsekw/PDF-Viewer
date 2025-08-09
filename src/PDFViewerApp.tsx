@@ -26,7 +26,7 @@ const PDFViewerAppContent: React.FC = () => {
   const { recordInteraction } = useAnalytics();
   const [searchParams] = useSearchParams();
   
-  // Load PDF from library if localId is provided
+  // Load PDF from library if localId is provided (only if library is available)
   useEffect(() => {
     const localId = searchParams.get('localId');
     if (localId) {
@@ -36,17 +36,25 @@ const PDFViewerAppContent: React.FC = () => {
 
   const loadPDFFromLibrary = async (localId: string) => {
     try {
+      // Check if IndexedDB is available before attempting to load
+      if (typeof indexedDB === 'undefined') {
+        console.warn('IndexedDB not available, skipping library PDF load');
+        return;
+      }
+      
       const pdf = await localLibraryRepo.get(localId);
       if (pdf) {
         // Convert blob to Uint8Array
         const arrayBuffer = await pdf.blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         setFile(uint8Array);
+        console.log('Successfully loaded PDF from library:', pdf.name);
       } else {
-        console.error('PDF not found in library:', localId);
+        console.warn('PDF not found in library:', localId);
       }
     } catch (error) {
-      console.error('Failed to load PDF from library:', error);
+      console.warn('Failed to load PDF from library (this is expected if no database is set up):', error);
+      // Don't throw the error - just log it as a warning since this is optional functionality
     }
   };
 
