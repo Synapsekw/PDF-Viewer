@@ -10,7 +10,7 @@ type PDFPageProxy = pdfjsLib.PDFPageProxy;
 // Use dynamic import for better Vite compatibility
 try {
   // Try to use the CDN worker first as it's more reliable
-  GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
   
   console.log('PdfEngine: Worker source set to:', GlobalWorkerOptions.workerSrc);
   console.log('PdfEngine: PDF.js version:', pdfjsLib.version);
@@ -23,7 +23,7 @@ try {
 }
 
 // Test worker availability (only in development)
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+if (typeof window !== 'undefined') {
   fetch(GlobalWorkerOptions.workerSrc)
     .then(response => {
       console.log('PdfEngine: CDN Worker file accessible:', response.ok);
@@ -60,10 +60,19 @@ interface PdfEngineProps {
 export const PdfEngine: React.FC<PdfEngineProps> = ({
   canvasRef: externalCanvasRef,
 }) => {
-  const { file, currentPage, scale, rotation, setDocument } = usePdf();
+  const { 
+    file, 
+    currentPage, 
+    scale, 
+    rotation, 
+    setDocument, 
+    setLoading, 
+    setLoadingProgress, 
+    setRendering,
+    isRendering
+  } = usePdf();
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [currentPageObj, setCurrentPageObj] = useState<PDFPageProxy | null>(null);
-  const [isRendering, setIsRendering] = useState(false);
   const internalCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const isRenderingRef = useRef(false);
   const pendingRenderRef = useRef<{page: number, scale: number, rotation: number} | null>(null);
@@ -82,48 +91,68 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     const loadDocument = async () => {
       try {
         console.log('PdfEngine: Starting to load PDF document...');
+        setLoading(true);
+        setLoadingProgress(10);
         
-        // Ensure we have a fresh copy of the data for PDF.js
-        let pdfData;
-        if (file instanceof Uint8Array) {
-          console.log('PdfEngine: File is Uint8Array, length:', file.length);
-          // Create a new Uint8Array from the existing one to avoid transfer issues
-          pdfData = new Uint8Array(file);
-          console.log('PdfEngine: Created new Uint8Array, length:', pdfData.length);
+        const isUrl = typeof file === 'string';
+        const isBytes = file instanceof Uint8Array;
+        
+        let loadingTask;
+        if (isUrl) {
+          const url = file as string;
+          console.log('PdfEngine: Loading via URL (streaming):', url);
+          setLoadingProgress(20);
+          loadingTask = getDocument({
+            url,
+            cMapUrl: '/pdfjs/cmaps/',
+            cMapPacked: true,
+            // Enable streaming/range for remote URLs
+            disableRange: false,
+            disableStream: false,
+            enableXfa: false,
+            useSystemFonts: true,
+            maxImageSize: 16777216,
+            isEvalSupported: false,
+          });
+        } else if (isBytes) {
+          console.log('PdfEngine: Loading via raw bytes, length:', (file as Uint8Array).length);
+          setLoadingProgress(30);
+          const pdfData = new Uint8Array(file as Uint8Array);
+          loadingTask = getDocument({
+            data: pdfData,
+            cMapUrl: '/pdfjs/cmaps/',
+            cMapPacked: true,
+            // Local bytes: range/stream not needed
+            disableRange: true,
+            disableStream: true,
+            enableXfa: false,
+            useSystemFonts: true,
+            maxImageSize: 16777216,
+            isEvalSupported: false,
+          });
         } else {
-          console.log('PdfEngine: File is not Uint8Array, using as-is');
-          pdfData = file;
+          throw new Error('Unsupported file type for PdfEngine');
         }
-        
-        console.log('PdfEngine: About to call getDocument with data length:', pdfData.length);
-        console.log('PdfEngine: Worker source:', GlobalWorkerOptions.workerSrc);
-        
-        const loadingTask = getDocument({
-          data: pdfData,
-          cMapUrl: '/pdfjs/cmaps/',
-          cMapPacked: true,
-          // Performance optimizations
-          disableFontFace: true, // Disable font face loading for faster rendering
-          disableRange: true, // Disable range requests for better performance with large files
-          disableStream: true, // Disable streaming for consistent performance
-          enableXfa: false, // Disable XFA forms support
-          useSystemFonts: true, // Use system fonts when possible
-          maxImageSize: 16777216, // 16MB limit for images
-          isEvalSupported: false, // Disable eval for security and performance
-        });
         
         // Add progress tracking for debugging
         loadingTask.onProgress = (progress: any) => {
           console.log('PdfEngine: Loading progress:', progress);
+          if (progress && typeof progress.loaded === 'number' && typeof progress.total === 'number') {
+            const percentage = Math.round((progress.loaded / progress.total) * 60) + 30; // 30-90%
+            setLoadingProgress(percentage);
+          }
         };
         
+        setLoadingProgress(80);
         const document = await loadingTask.promise;
         
         console.log('PdfEngine: PDF document loaded successfully, pages:', document.numPages);
         setPdfDocument(document);
         setDocument(document);
+        setLoadingProgress(100);
       } catch (error) {
         console.error('PdfEngine: Failed to load PDF:', error);
+        setLoading(false);
         if (error instanceof Error) {
           console.error('PdfEngine: Error details:', {
             name: error.name,
@@ -160,7 +189,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         currentPageObj.cleanup();
       }
     };
-  }, [file]);
+  }, [file, setDocument, setLoading, setLoadingProgress]);
 
   // Function to render a page (memoized for performance)
   const renderPage = useCallback(async (pageNum: number, pageScale: number, pageRotation: number) => {
@@ -180,7 +209,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
 
     try {
       isRenderingRef.current = true;
-      setIsRendering(true);
+      setRendering(true);
 
       // Load new page first, then cleanup (prevents flash)
       const newPage = await pdfDocument.getPage(pageNum);
@@ -308,7 +337,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
         context.drawImage(offscreenCanvas, 0, 0, canvas.width, canvas.height);
         
         context.restore();
-        setIsRendering(false);
+        setRendering(false);
       });
       console.log('PdfEngine: Page rendered successfully');
       
@@ -332,7 +361,7 @@ export const PdfEngine: React.FC<PdfEngineProps> = ({
     } catch (error) {
       console.error('Failed to render page:', error);
       isRenderingRef.current = false;
-      setIsRendering(false);
+      setRendering(false);
     }
   }, [pdfDocument, currentPageObj]);
 

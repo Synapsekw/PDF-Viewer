@@ -220,7 +220,7 @@ export const BackupPanel: React.FC<BackupPanelProps> = ({ onClose }) => {
             <IconButton
               icon={<span className="text-lg">×</span>}
               onClick={onClose}
-              variant="ghost"
+              variant="secondary"
               size="sm"
             />
           </div>

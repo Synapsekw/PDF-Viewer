@@ -6,89 +6,85 @@ import AppShell from './layout/AppShell';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { ThemeProvider } from './theme/ThemeProvider';
 
-// Initialize Supabase and import development scripts
+// Initialize Supabase and repository manager
 import { SupabaseClientManager } from './lib/supabase/client';
+import { repositoryManager } from './lib/repositories/RepositoryManager';
 
 // Initialize Supabase with project credentials
 SupabaseClientManager.initializeWithProject();
 
-// Import development scripts
-if (process.env.NODE_ENV === 'development') {
-  import('./scripts/createProfileForUser');
-  import('./scripts/setupAdmin');
-  import('./scripts/fixAdminProfile');
+// Configure repository manager for Supabase mode
+try {
+  repositoryManager.initialize();
+  console.log('✅ Repository manager initialized for Supabase mode');
+} catch (error) {
+  console.error('❌ Failed to initialize repository manager:', error);
 }
 
-// Lazy load heavy components for better performance
+// Lazy load pages for better performance
 const PDFViewerApp = lazy(() => import('./PDFViewerApp'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const User = lazy(() => import('./pages/User'));
 const Library = lazy(() => import('./pages/Library'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Admin = lazy(() => import('./pages/Admin'));
-const PublicLandingRoute = lazy(() => import('./features/publicViewer/PublicLanding'));
-const PublicViewerRoute = lazy(() => import('./features/publicViewer/PublicViewer'));
+const User = lazy(() => import('./pages/User'));
 
-// Loading component for Suspense
-const LoadingSpinner = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
-      <p className="text-slate-400">Loading...</p>
-    </div>
-  </div>
-);
-
-const App: React.FC = () => {
+function App() {
   return (
     <ThemeProvider>
       <AnalyticsProvider>
         <Router>
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/dashboard" element={
-                <AppShell>
-                  <Dashboard />
-                </AppShell>
-              } />
-              <Route path="/app" element={
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/viewer" element={
+              <Suspense fallback={<div>Loading PDF Viewer...</div>}>
                 <AppShell>
                   <PDFViewerApp />
                 </AppShell>
-              } />
-              <Route path="/user" element={
+              </Suspense>
+            } />
+            <Route path="/dashboard" element={
+              <Suspense fallback={<div>Loading Dashboard...</div>}>
                 <AppShell>
-                  <User />
+                  <Dashboard />
                 </AppShell>
-              } />
-              <Route path="/library" element={
+              </Suspense>
+            } />
+            <Route path="/library" element={
+              <Suspense fallback={<div>Loading Library...</div>}>
                 <AppShell>
                   <Library />
                 </AppShell>
-              } />
-              <Route path="/reports" element={
+              </Suspense>
+            } />
+            <Route path="/reports" element={
+              <Suspense fallback={<div>Loading Reports...</div>}>
                 <AppShell>
                   <Reports />
                 </AppShell>
-              } />
-              <Route path="/admin" element={
+              </Suspense>
+            } />
+            <Route path="/admin" element={
+              <Suspense fallback={<div>Loading Admin...</div>}>
                 <AppShell>
                   <Admin />
                 </AppShell>
-              } />
-              {/* Public routes - no AppShell wrapper */}
-              <Route path="/s/:token" element={<PublicLandingRoute />} />
-              <Route path="/v/:token" element={<PublicViewerRoute />} />
-              <Route path="/test" element={<div style={{padding: '20px', background: 'green', color: 'white'}}>Test Route Working!</div>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+              </Suspense>
+            } />
+            <Route path="/user" element={
+              <Suspense fallback={<div>Loading User Settings...</div>}>
+                <AppShell>
+                  <User />
+                </AppShell>
+              </Suspense>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Router>
       </AnalyticsProvider>
     </ThemeProvider>
   );
-};
+}
 
 export default App;

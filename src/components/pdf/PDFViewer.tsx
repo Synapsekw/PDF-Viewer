@@ -1,10 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import styled from '@emotion/styled';
 import { PdfEngine } from '../../pdf/PdfEngine';
 import { usePdf } from '../../pdf/PdfContext';
-import { IconButton, Card, Tooltip } from '../ui';
+import { IconButton, Tooltip } from '../ui';
 import { WelcomeMessage } from '../welcome';
-import theme from '../../theme';
+import { PDFLoadingOverlay } from './PDFLoadingOverlay';
 import { 
   FiChevronLeft, 
   FiChevronRight, 
@@ -14,136 +13,16 @@ import {
   FiUpload,
   FiDownload,
   FiBarChart2,
-  FiFileText
+  FiFileText,
+  FiCloud
 } from 'react-icons/fi';
+import { cloudUploadService } from '../../services/CloudUploadService';
+import { AuthModal } from '../auth';
+import { CloudUploadProgress } from '../upload';
+import { UploadProgress } from '../../lib/repositories/supabase/LibraryRepository';
+import { useToast } from '../../hooks/useToast';
 
-const ViewerContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  position: relative;
-  padding: 0;
-  overflow: hidden;
-`;
-
-const CanvasWrapper = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: transparent;
-  border-radius: ${theme.borderRadius.md};
-  box-shadow: ${theme.shadows.lg};
-  
-  canvas {
-    max-width: none;
-    max-height: none;
-    object-fit: contain;
-    display: block;
-    transition: width 0.3s ease-out, height 0.3s ease-out;
-    margin: auto;
-    /* Background matches the landing page exactly */
-    background: linear-gradient(135deg, #0f172a 0%, #334155 50%, #0f172a 100%);
-  }
-`;
-
-const ControlsBar = styled(Card)`
-  position: absolute;
-  bottom: ${theme.spacing[6]};
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  border-radius: ${theme.borderRadius.full};
-  padding: ${theme.spacing[1]};
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(${theme.colors.glass.blur});
-  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
-  border: 1px solid ${theme.colors.glass.border};
-  box-shadow: ${theme.shadows.lg};
-  z-index: 1000;
-`;
-
-const TopControlsBar = styled(Card)`
-  position: absolute;
-  top: ${theme.spacing[4]};
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  border-radius: ${theme.borderRadius.full};
-  padding: ${theme.spacing[1]};
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(${theme.colors.glass.blur});
-  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
-  border: 1px solid ${theme.colors.glass.border};
-  box-shadow: ${theme.shadows.lg};
-`;
-
-const PageDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${theme.spacing[1]} ${theme.spacing[3]};
-  color: ${theme.colors.text.primary};
-  font-size: ${theme.typography.fontSize.sm};
-  margin: 0 ${theme.spacing[2]};
-`;
-
-const ZoomDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${theme.spacing[1]} ${theme.spacing[3]};
-  color: ${theme.colors.text.primary};
-  font-size: ${theme.typography.fontSize.sm};
-  margin: 0 ${theme.spacing[2]};
-  border-left: 1px solid ${theme.colors.glass.border};
-  border-right: 1px solid ${theme.colors.glass.border};
-`;
-
-const Divider = styled.div`
-  width: 1px;
-  height: 24px;
-  background-color: ${theme.colors.glass.border};
-  margin: 0 ${theme.spacing[2]};
-`;
-
-const PageInput = styled.input`
-  width: 40px;
-  background-color: transparent;
-  border: none;
-  color: ${theme.colors.text.primary};
-  font-size: ${theme.typography.fontSize.md};
-  text-align: center;
-  padding: 0;
-  margin: 0;
-  
-  &:focus {
-    outline: none;
-  }
-`;
-
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
-  
-  svg {
-    width: 16px;
-    height: 16px;
-    stroke-width: 2;
-  }
-`;
+// Component interfaces and types remain the same
 
 interface PDFViewerProps {
   onToggleOutline?: () => void;
@@ -172,13 +51,28 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const canvasRef = externalCanvasRef || internalCanvasRef;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { currentPage, totalPages, setCurrentPage, scale, setScale, document } = usePdf();
+  const { currentPage, totalPages, setCurrentPage, scale, setScale, document, file, isLoading, loadingProgress, isRendering } = usePdf();
   const [pageInputValue, setPageInputValue] = useState<string>(currentPage.toString());
   const [showAnalyticsDropdown, setShowAnalyticsDropdown] = useState(false);
   
   // Local state for analytics for immediate UI feedback
   const [localIsAnalyticsEnabled, setLocalIsAnalyticsEnabled] = useState<boolean>(isAnalyticsEnabled);
   const [localSelectedAnalyticsType, setLocalSelectedAnalyticsType] = useState<string>(selectedAnalyticsType);
+  
+  // Cloud upload state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [uploadState, setUploadState] = useState<{
+    isUploading: boolean;
+    progress: UploadProgress | null;
+    status: 'idle' | 'uploading' | 'success' | 'error';
+    error?: string;
+  }>({
+    isUploading: false,
+    progress: null,
+    status: 'idle'
+  });
+  
+  const { showToast } = useToast();
 
   // Keep local analytics state in sync with parent when it changes
   useEffect(() => {
@@ -241,6 +135,85 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     const file = event.target.files?.[0];
     if (file && onFileUpload) {
       onFileUpload(file);
+    }
+  };
+
+  const handleCloudUpload = async () => {
+    // Check if document is loaded
+    if (!document) {
+      showToast('No PDF loaded to upload', 'error');
+      return;
+    }
+
+    // Check authentication
+    const isAuthenticated = await cloudUploadService.isAuthenticated();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    // Check if file data is available
+    if (!file) {
+      showToast('Unable to access PDF data', 'error');
+      return;
+    }
+
+    // Start upload
+    setUploadState({
+      isUploading: true,
+      progress: null,
+      status: 'uploading'
+    });
+
+    try {
+      const fileName = `${document.fingerprints?.[0] || 'document'}.pdf`;
+      
+      const result = await cloudUploadService.uploadPDFToCloud(
+        file as Uint8Array,
+        fileName,
+        {
+          onProgress: (progress) => {
+            setUploadState(prev => ({
+              ...prev,
+              progress
+            }));
+          },
+          onSuccess: (documentId) => {
+            setUploadState({
+              isUploading: false,
+              progress: null,
+              status: 'success'
+            });
+            showToast('PDF successfully uploaded to cloud!', 'success');
+            
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+              setUploadState({
+                isUploading: false,
+                progress: null,
+                status: 'idle'
+              });
+            }, 3000);
+          },
+          onError: (error) => {
+            setUploadState({
+              isUploading: false,
+              progress: null,
+              status: 'error',
+              error: error.message
+            });
+            showToast(`Upload failed: ${error.message}`, 'error');
+          }
+        }
+      );
+    } catch (error) {
+      setUploadState({
+        isUploading: false,
+        progress: null,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      showToast('Failed to upload PDF', 'error');
     }
   };
 
@@ -526,7 +499,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   }, [showAnalyticsDropdown]);
 
   return (
-    <ViewerContainer>
+    <div className="flex flex-col items-center justify-center w-full h-full relative p-0 overflow-hidden">
       {/* Hidden file input for upload */}
       <input
         ref={fileInputRef}
@@ -537,58 +510,50 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       />
       
       {/* Always render canvas for analytics features, but hide it when no document */}
-      <div style={{ 
-        display: document ? 'block' : 'none',
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden'
-      }}>
-        <CanvasWrapper>
+      <div className={`${document ? 'block' : 'hidden'} w-full h-full overflow-hidden`}>
+        <div className="relative flex items-center justify-center w-full h-full overflow-auto bg-transparent rounded-lg min-h-0">
           <PdfEngine canvasRef={canvasRef} />
-        </CanvasWrapper>
+          <PDFLoadingOverlay 
+            isLoading={isLoading} 
+            loadingProgress={loadingProgress} 
+            isRendering={isRendering} 
+          />
+        </div>
       </div>
       
       {/* Show welcome message if no document is loaded */}
       {!document && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10
-        }}>
+        <div className="absolute inset-0 flex items-center justify-center z-10">
           <WelcomeMessage onFileUpload={onFileUpload} />
         </div>
       )}
       
-      <TopControlsBar variant="glass">
+      {/* Top Controls Bar */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex items-center bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-full p-1 shadow-lg">
         <Tooltip content="Previous Page">
           <IconButton 
             variant="transparent"
             onClick={goToPreviousPage} 
             disabled={currentPage <= 1}
           >
-            <IconWrapper>
-              <FiChevronLeft />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiChevronLeft className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
-        <PageInput 
+        <input 
           value={pageInputValue}
           onChange={handlePageInputChange}
           onBlur={handlePageInputBlur}
           onKeyDown={handlePageInputKeyDown}
           aria-label="Current page"
+          className="w-10 bg-transparent border-none text-white text-base text-center p-0 m-0 focus:outline-none"
         />
         
-        <PageDisplay>
+        <div className="flex items-center justify-center px-3 py-1 text-white text-sm mx-2">
           / {totalPages || 1}
-        </PageDisplay>
+        </div>
         
         <Tooltip content="Next Page">
           <IconButton 
@@ -596,23 +561,24 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             onClick={goToNextPage} 
             disabled={currentPage >= totalPages}
           >
-            <IconWrapper>
-              <FiChevronRight />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiChevronRight className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
-      </TopControlsBar>
+      </div>
       
-      <ControlsBar variant="glass">
+      {/* Bottom Controls Bar */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-full p-1 shadow-lg z-10">
         {/* File Controls */}
         <Tooltip content="Upload PDF">
           <IconButton 
             variant="transparent"
             onClick={() => fileInputRef.current?.click()}
           >
-            <IconWrapper>
-              <FiUpload />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiUpload className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
@@ -621,13 +587,26 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             variant="transparent"
             onClick={onDownload}
           >
-            <IconWrapper>
-              <FiDownload />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiDownload className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
-        <Divider />
+        <Tooltip content="Push to Cloud">
+          <IconButton 
+            variant="transparent"
+            onClick={handleCloudUpload}
+            disabled={!document || uploadState.isUploading}
+            className={uploadState.status === 'success' ? 'text-green-400' : ''}
+          >
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiCloud className="w-4 h-4" />
+            </div>
+          </IconButton>
+        </Tooltip>
+        
+        <div className="w-px h-6 bg-slate-600 mx-2"></div>
         
         {/* Zoom Controls */}
         <Tooltip content="Zoom Out">
@@ -636,15 +615,15 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             onClick={zoomOut}
             disabled={scale <= 1.0}
           >
-            <IconWrapper>
-              <FiMinus />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiMinus className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
-        <ZoomDisplay>
+        <div className="flex items-center justify-center px-3 py-1 text-white text-sm mx-2 border-l border-r border-slate-600">
           {Math.round(scale * 100)}%
-        </ZoomDisplay>
+        </div>
         
         <Tooltip content="Zoom In">
           <IconButton 
@@ -652,13 +631,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             onClick={zoomIn}
             disabled={scale >= 2.49}
           >
-            <IconWrapper>
-              <FiPlus />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiPlus className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
-        <Divider />
+        <div className="w-px h-6 bg-slate-600 mx-2"></div>
         
         {/* Analytics Controls */}
         <div className="relative" ref={dropdownRef}>
@@ -673,9 +652,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               className={`${effectiveIsAnalyticsEnabled ? 'text-blue-400' : ''} ${showAnalyticsDropdown ? 'bg-white/20' : ''} hover:bg-white/10 flex items-center gap-1`}
 
             >
-              <IconWrapper>
-                <FiBarChart2 />
-              </IconWrapper>
+              <div className="flex items-center justify-center w-4 h-4">
+                <FiBarChart2 className="w-4 h-4" />
+              </div>
               {effectiveIsAnalyticsEnabled && effectiveSelectedAnalyticsType && effectiveSelectedAnalyticsType !== 'none' && (
                 <span className="text-xs opacity-75 ml-1">
                   {effectiveSelectedAnalyticsType === 'heatmap' && '🔥'}
@@ -703,13 +682,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             variant="transparent"
             onClick={onExportAnalytics}
           >
-            <IconWrapper>
-              <FiFileText />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiFileText className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
         
-        <Divider />
+        <div className="w-px h-6 bg-slate-600 mx-2"></div>
         
         {/* Document Controls */}
         <Tooltip content="Toggle Document Outline">
@@ -717,13 +696,35 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             variant="transparent"
             onClick={onToggleOutline}
           >
-            <IconWrapper>
-              <FiList />
-            </IconWrapper>
+            <div className="flex items-center justify-center w-4 h-4">
+              <FiList className="w-4 h-4" />
+            </div>
           </IconButton>
         </Tooltip>
-      </ControlsBar>
-    </ViewerContainer>
+      </div>
+      
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={() => {
+          setShowAuthModal(false);
+          handleCloudUpload();
+        }}
+        title="Sign in to Upload"
+        message="Sign in to save your PDFs to the cloud and access them from any device."
+      />
+      
+      {/* Upload Progress */}
+      <CloudUploadProgress
+        isVisible={uploadState.status !== 'idle'}
+        progress={uploadState.progress}
+        fileName={document?.fingerprints?.[0] || 'document.pdf'}
+        status={uploadState.status}
+        error={uploadState.error}
+        onClose={() => setUploadState(prev => ({ ...prev, status: 'idle' }))}
+      />
+    </div>
   );
 };
 

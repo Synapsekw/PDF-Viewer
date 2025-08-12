@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, Settings, Activity, AlertTriangle } from 'lucide-react';
-import { AdminDashboard, AdminUserPanel, UserActivityMonitor } from '../components/admin';
+import { AdminDashboard, AdminUserPanel, UserActivityMonitor, SetupTools } from '../components/admin';
 import { SupabaseClientManager } from '../lib/supabase/client';
 import { Card } from '../components/ui';
 
@@ -68,7 +68,7 @@ export default function Admin() {
 
   if (isAuthorized === null) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
           <p className="text-slate-400">Checking permissions...</p>
@@ -79,7 +79,7 @@ export default function Admin() {
 
   if (!isAuthorized && process.env.NODE_ENV !== 'development') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <Card className="p-8 max-w-md mx-auto text-center">
           <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
@@ -129,65 +129,68 @@ export default function Admin() {
       id: 'legacy' as AdminTab,
       label: 'Setup Tools',
       icon: <Settings className="w-4 h-4" />,
-      description: 'Create default admin user'
+      description: 'System configuration and maintenance'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <Shield className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Admin Panel
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Welcome, {currentUser?.display_name || currentUser?.email}
-                </p>
-              </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+        {/* Welcome Card - Profile page style */}
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-lg p-6 border border-slate-700/50">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center">
+              <Shield className="w-10 h-10 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-semibold text-white">Admin Panel</h1>
+              <p className="text-slate-400">Welcome, {currentUser?.display_name || currentUser?.email}</p>
+              <p className="text-sm text-slate-500 mt-1">
+                Admin • System Management and User Control
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
+        {/* Navigation Card - Profile page style */}
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-lg p-6 border border-slate-700/50">
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Admin Tools
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`${
+                className={`p-4 rounded-lg border transition-all ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                    : 'bg-slate-700/30 border-slate-600 text-slate-400 hover:bg-slate-700/50 hover:border-slate-500 hover:text-slate-300'
+                }`}
               >
-                {tab.icon}
-                {tab.label}
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    activeTab === tab.id ? 'bg-blue-500/20' : 'bg-slate-600/50'
+                  }`}>
+                    {tab.icon}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium">{tab.label}</div>
+                    <div className="text-xs opacity-75">{tab.description}</div>
+                  </div>
+                </div>
               </button>
             ))}
-          </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div>
+          {activeTab === 'dashboard' && <AdminDashboard />}
+          {activeTab === 'activity' && <UserActivityMonitor />}
+          {activeTab === 'legacy' && <SetupTools />}
         </div>
       </div>
-
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {activeTab === 'dashboard' && <AdminDashboard />}
-        {activeTab === 'activity' && <UserActivityMonitor />}
-        {activeTab === 'legacy' && (
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-            <AdminUserPanel />
-          </div>
-        )}
-      </div>
-    </div>
   );
 }

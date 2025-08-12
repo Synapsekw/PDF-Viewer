@@ -2,148 +2,123 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAnalytics } from './contexts/AnalyticsContext';
 import { PdfProvider, usePdf } from './pdf/PdfContext';
-import { localLibraryRepo } from './features/library/localRepo';
-import { GlassViewLayout } from './components/layout';
 import { PDFViewerWithFeatures } from './components/pdf/PDFViewerWithFeatures';
-import { SettingsModal } from './components/settings';
+import { AIAssistant } from './components/ai';
 import { ExportPanel } from './features/export/ExportPanel';
+import { repositoryManager } from './lib/repositories/RepositoryManager';
 import './index.css';
 
-// AI Assistant Logic
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-}
-
 const PDFViewerAppContent: React.FC = () => {
-  const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
-  const [showAnalyticsDropdown, setShowAnalyticsDropdown] = useState(false);
   const [isAnalyticsEnabled, setIsAnalyticsEnabled] = useState(false);
   const [selectedAnalyticsType, setSelectedAnalyticsType] = useState<string>('none');
-  const { document: pdfDocument, setFile } = usePdf();
+  const { document: pdfDocument, setFile, setDocumentMeta } = usePdf();
   const { recordInteraction } = useAnalytics();
   const [searchParams] = useSearchParams();
   
-  // Load PDF from library if localId is provided (only if library is available)
+  // Debug logging
   useEffect(() => {
-    const localId = searchParams.get('localId');
-    if (localId) {
-      loadPDFFromLibrary(localId);
+    console.log('PDFViewerAppContent mounted');
+  }, []);
+  
+  // Load PDF from library if documentId or localId is provided
+  useEffect(() => {
+    const documentId = searchParams.get('documentId') || searchParams.get('localId');
+    console.log('PDFViewerApp: Checking for documentId/localId parameter:', documentId);
+    if (documentId) {
+      console.log('PDFViewerApp: Found documentId, loading PDF from library:', documentId);
+      loadPDFFromLibrary(documentId);
+    } else {
+      console.log('PDFViewerApp: No documentId parameter found');
     }
   }, [searchParams]);
 
-  const loadPDFFromLibrary = async (localId: string) => {
+  const loadPDFFromLibrary = async (documentId: string) => {
+    console.log('PDFViewerApp: loadPDFFromLibrary called with documentId:', documentId);
     try {
-      // Check if IndexedDB is available before attempting to load
-      if (typeof indexedDB === 'undefined') {
-        console.warn('IndexedDB not available, skipping library PDF load');
-        return;
-      }
+      const libraryRepo = repositoryManager.getLibraryRepository();
+      console.log('PDFViewerApp: Got library repository:', libraryRepo);
       
-      const pdf = await localLibraryRepo.get(localId);
-      if (pdf) {
-        // Convert blob to Uint8Array
+      // Get PDF directly from library
+      const pdf = await libraryRepo.get(documentId);
+      console.log('PDFViewerApp: Got PDF from library:', pdf);
+      
+      if (pdf && pdf.blob) {
+        // Convert blob to Uint8Array for PDF.js
         const arrayBuffer = await pdf.blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         setFile(uint8Array);
-        console.log('Successfully loaded PDF from library:', pdf.name);
+        
+        // Set document metadata
+        setDocumentMeta({ name: pdf.name, id: pdf.id });
+        
+        console.log('PDFViewerApp: PDF loaded from library blob');
       } else {
-        console.warn('PDF not found in library:', localId);
+        console.error('PDFViewerApp: PDF not found or no blob available');
       }
     } catch (error) {
-      console.warn('Failed to load PDF from library (this is expected if no database is set up):', error);
-      // Don't throw the error - just log it as a warning since this is optional functionality
+      console.error('PDFViewerApp: Error loading PDF from library:', error);
     }
   };
 
-
-  const handleAnalyticsButtonClick = () => {
-    // Don't toggle the dropdown off here - let the PDFViewer handle dropdown state
-    setShowAnalyticsDropdown(!showAnalyticsDropdown);
+  const handleFileUpload = async (file: File) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (result instanceof ArrayBuffer) {
+          const uint8Array = new Uint8Array(result);
+          setFile(uint8Array);
+          console.log('PDFViewerApp: File uploaded successfully');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error('PDFViewerApp: Error uploading file:', error);
+    }
   };
 
-  const handleFileUpload = (file: File) => {
-    console.log('PDFViewerAppContent: File upload triggered:', file.name, file.size);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result;
-      if (result instanceof ArrayBuffer) {
-        const uint8Array = new Uint8Array(result);
-        console.log('PDFViewerAppContent: Converting file to Uint8Array:', uint8Array.length, 'bytes');
-        setFile(uint8Array);
-      }
-    };
-    reader.readAsArrayBuffer(file);
+  const handleAnalyticsToggle = () => {
+    setIsAnalyticsEnabled(!isAnalyticsEnabled);
+    console.log('PDFViewerApp: Analytics toggled:', !isAnalyticsEnabled);
   };
 
-  const handleExportAnalytics = () => {
-    console.log('PDFViewerAppContent: Export analytics button clicked');
-    setShowExport(true);
+  const handleAnalyticsTypeChange = (type: string) => {
+    setSelectedAnalyticsType(type);
+    console.log('PDFViewerApp: Analytics type changed:', type);
+  };
+
+  const handleExportToggle = () => {
+    setShowExport(!showExport);
+    console.log('PDFViewerApp: Export panel toggled:', !showExport);
   };
 
   return (
-    <div className="transition-[margin] duration-200 ease-out min-w-0">
-      <div className="app-container min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <GlassViewLayout
-        onFileUpload={handleFileUpload}
-        onOpenSettings={() => setShowSettings(true)}
-        onExportAnalytics={handleExportAnalytics}
-        onToggleAnalytics={handleAnalyticsButtonClick}
-        isAnalyticsEnabled={isAnalyticsEnabled}
-      >
-        <PDFViewerWithFeatures 
-          onFileUpload={handleFileUpload}
-          onDownload={() => console.log('Download PDF')}
-          onExportAnalytics={handleExportAnalytics}
-          isAnalyticsEnabled={isAnalyticsEnabled}
-          onToggleAnalytics={handleAnalyticsButtonClick}
-          onAnalyticsTypeChange={(type) => {
-            console.log('🔥 PDFViewerApp: Analytics type changing from', selectedAnalyticsType, 'to', type);
-            
-            // Update state based on type
-            const newIsEnabled = type !== 'none';
-            
-            // Only update state if values actually changed
-            if (newIsEnabled !== isAnalyticsEnabled || type !== selectedAnalyticsType) {
-              setIsAnalyticsEnabled(newIsEnabled);
-              setSelectedAnalyticsType(type);
-              
-              // Update global element immediately with new values
-              let analyticsElement = window.document.getElementById('analytics-live-view-element');
-              if (!analyticsElement) {
-                analyticsElement = window.document.createElement('div');
-                analyticsElement.id = 'analytics-live-view-element';
-                analyticsElement.style.display = 'none';
-                window.document.body.appendChild(analyticsElement);
-                console.log('PDFViewerApp: Created analytics element');
-              }
-              
-              analyticsElement.setAttribute('data-analytics-live-view', newIsEnabled ? 'true' : 'false');
-              analyticsElement.setAttribute('data-analytics-type', type);
-              
-              console.log('🚀 PDFViewerApp: Analytics state updated:', { 
-                isEnabled: newIsEnabled, 
-                type: type,
-                element: analyticsElement
-              });
-            }
-          }}
-          selectedAnalyticsType={selectedAnalyticsType}
-        />
-      </GlassViewLayout>
-
-      {showSettings && (
-        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
-      )}
-
-      {showExport && (
-        <div className="modal-overlay">
-          <ExportPanel onClose={() => setShowExport(false)} />
+    <div className="pdf-viewer-layout relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="flex-container flex flex-col lg:flex-row h-full">
+        {/* Main PDF Viewer */}
+        <div className="pdf-viewer-container flex-item relative">
+          <PDFViewerWithFeatures
+            onFileUpload={handleFileUpload}
+            onToggleAnalytics={handleAnalyticsToggle}
+            onAnalyticsTypeChange={handleAnalyticsTypeChange}
+            onExportAnalytics={handleExportToggle}
+            isAnalyticsEnabled={isAnalyticsEnabled}
+            selectedAnalyticsType={selectedAnalyticsType}
+          />
         </div>
-      )}
+
+        {/* AI Assistant Panel */}
+        <div className="ai-assistant-container w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-700/50 bg-slate-800/50 backdrop-blur-sm h-96 lg:h-full flex-shrink-0">
+          <AIAssistant />
+        </div>
+
+        {/* Export Panel Overlay */}
+        {showExport && (
+          <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm">
+            <ExportPanel onClose={() => setShowExport(false)} />
+          </div>
+        )}
       </div>
     </div>
   );

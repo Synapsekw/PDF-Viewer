@@ -34,7 +34,7 @@ export class SupabaseClientManager {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
-            storageKey: 'spectra-ai-auth', // Unique storage key to prevent conflicts
+            storageKey: import.meta.env.VITE_STORAGE_KEY || 'spectra-ai-auth', // Unique storage key to prevent conflicts
             flowType: 'pkce'
           },
           realtime: {
@@ -192,9 +192,27 @@ export class SupabaseClientManager {
    */
   static initializeWithProject(): void {
     try {
-      // Use your project credentials
-      const projectUrl = 'https://ajgtdraknmayclhawwlq.supabase.co';
-      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqZ3RkcmFrbm1heWNsaGF3d2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjMwNzcsImV4cCI6MjA3MDMzOTA3N30.l9lpihHadKs_rtXaWNpr0jQiABrKdGt7-2757mf1GD0';
+      // Use environment variables for credentials
+      const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!projectUrl || !anonKey) {
+        console.error('❌ Supabase credentials not found in environment variables');
+        console.log('Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env file');
+        return;
+      }
+
+      // Avoid re-initializing if already configured with same credentials
+      const currentConfig = SupabaseConfigManager.getConfig();
+      if (
+        currentConfig.enabled &&
+        currentConfig.url === projectUrl &&
+        currentConfig.anonKey === anonKey &&
+        this.client
+      ) {
+        console.log('✅ Supabase already initialized with project credentials');
+        return;
+      }
 
       console.log('🔧 Initializing Supabase with project credentials...');
       SupabaseConfigManager.initializeWithCredentials(projectUrl, anonKey);

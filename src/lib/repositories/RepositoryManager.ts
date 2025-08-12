@@ -1,15 +1,14 @@
 /**
- * Repository Manager - Central configuration for switching between local and Supabase
+ * Repository Manager - Supabase-only configuration
  */
 
 import { SupabaseClientManager } from '../supabase/client';
-import { localLibraryRepo } from '../../features/library/localRepo';
 import { SupabasePDFLibraryRepository } from './supabase/LibraryRepository';
 import { SupabaseShareRepository } from './supabase/ShareRepository';
 import { SupabaseAnalyticsRepository } from './supabase/AnalyticsRepository';
 import { shareService } from '../../features/share/shareService';
 
-export type RepositoryMode = 'local' | 'supabase' | 'auto';
+export type RepositoryMode = 'supabase';
 
 export interface RepositoryConfig {
   mode: RepositoryMode;
@@ -20,55 +19,43 @@ export interface RepositoryConfig {
 
 class RepositoryManager {
   private config: RepositoryConfig = {
-    mode: 'auto',
+    mode: 'supabase',
     enableAuth: true,
     enableRealtime: true,
     enableOfflineSync: true
   };
 
-  private libraryRepo: any = null;
-  private shareRepo: any = null;
-  private analyticsRepo: any = null;
+  private libraryRepo: SupabasePDFLibraryRepository | null = null;
+  private shareRepo: SupabaseShareRepository | null = null;
+  private analyticsRepo: SupabaseAnalyticsRepository | null = null;
 
   /**
-   * Initialize repositories based on current configuration
+   * Initialize repositories for Supabase mode
    */
   initialize(): void {
     const supabase = SupabaseClientManager.getClient();
     
-    console.log('🔧 Initializing Repository Manager:', {
+    console.log('🔧 Initializing Repository Manager for Supabase:', {
       mode: this.config.mode,
       supabaseAvailable: !!supabase,
       config: this.config
     });
 
-    // Initialize repositories based on mode
-    if (this.config.mode === 'supabase' && !supabase) {
-      throw new Error('Supabase mode selected but client not available');
+    if (!supabase) {
+      throw new Error('Supabase client not available - please check your configuration');
     }
 
-    const useSupabase = supabase && (this.config.mode === 'supabase' || this.config.mode === 'auto');
-
-    if (useSupabase) {
-      console.log('📡 Using Supabase repositories');
-      this.libraryRepo = new SupabasePDFLibraryRepository(supabase!);
-      this.shareRepo = new SupabaseShareRepository(supabase!);
-      this.analyticsRepo = new SupabaseAnalyticsRepository(supabase!);
-      
-      // Configure share service for Supabase mode
-      shareService.setMode('supabase');
-    } else {
-      console.log('💾 Using local repositories');
-      this.libraryRepo = localLibraryRepo;
-      // shareRepo and analyticsRepo will use local implementations
-      
-      // Configure share service for local mode
-      shareService.setMode('local');
-    }
+    console.log('📡 Using Supabase repositories');
+    this.libraryRepo = new SupabasePDFLibraryRepository(supabase);
+    this.shareRepo = new SupabaseShareRepository(supabase);
+    this.analyticsRepo = new SupabaseAnalyticsRepository(supabase);
+    
+    // Configure share service for Supabase mode
+    shareService.setMode('supabase');
   }
 
   /**
-   * Configure repository mode
+   * Configure repository settings
    */
   configure(config: Partial<RepositoryConfig>): void {
     this.config = { ...this.config, ...config };
@@ -105,35 +92,35 @@ class RepositoryManager {
   /**
    * Get library repository
    */
-  getLibraryRepository() {
+  getLibraryRepository(): SupabasePDFLibraryRepository {
     if (!this.libraryRepo) {
       this.initialize();
     }
-    return this.libraryRepo;
+    return this.libraryRepo!;
   }
 
   /**
    * Get share repository
    */
-  getShareRepository() {
+  getShareRepository(): SupabaseShareRepository {
     if (!this.shareRepo) {
       this.initialize();
     }
-    return this.shareRepo;
+    return this.shareRepo!;
   }
 
   /**
    * Get analytics repository
    */
-  getAnalyticsRepository() {
+  getAnalyticsRepository(): SupabaseAnalyticsRepository {
     if (!this.analyticsRepo) {
       this.initialize();
     }
-    return this.analyticsRepo;
+    return this.analyticsRepo!;
   }
 
   /**
-   * Check if Supabase is available and healthy
+   * Check Supabase connection health
    */
   async checkSupabaseHealth(): Promise<{
     available: boolean;
@@ -186,63 +173,13 @@ class RepositoryManager {
         available: false,
         authenticated: false,
         latency: Date.now() - startTime,
-        errors: [`Connection failed: ${error.message}`]
+        errors: [`Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
 
   /**
-   * Switch to Supabase mode (full migration)
-   */
-  async migrateToSupabase(): Promise<{ success: boolean; errors: string[] }> {
-    const errors: string[] = [];
-    
-    try {
-      // Check if Supabase is healthy
-      const health = await this.checkSupabaseHealth();
-      if (!health.available) {
-        errors.push('Supabase not available');
-        return { success: false, errors };
-      }
-
-      if (!health.authenticated) {
-        errors.push('User not authenticated - please log in first');
-        return { success: false, errors };
-      }
-
-      // Configure for full Supabase mode
-      this.configure({
-        mode: 'supabase',
-        enableAuth: true,
-        enableRealtime: true,
-        enableOfflineSync: true
-      });
-
-      console.log('🚀 Successfully migrated to Supabase mode!');
-      return { success: true, errors: [] };
-
-    } catch (error) {
-      errors.push(`Migration failed: ${error.message}`);
-      return { success: false, errors };
-    }
-  }
-
-  /**
-   * Switch to local mode (rollback)
-   */
-  rollbackToLocal(): void {
-    this.configure({
-      mode: 'local',
-      enableAuth: false,
-      enableRealtime: false,
-      enableOfflineSync: false
-    });
-    
-    console.log('🔄 Rolled back to local mode');
-  }
-
-  /**
-   * Get current mode information
+   * Get current status information
    */
   getStatus(): {
     mode: RepositoryMode;
@@ -260,7 +197,7 @@ class RepositoryManager {
       supabaseAvailable: !!supabase,
       repositories: {
         library: this.libraryRepo?.constructor.name || 'Not initialized',
-        share: shareService.isSupabaseAvailable() ? 'Supabase' : 'Local',
+        share: this.shareRepo?.constructor.name || 'Not initialized',
         analytics: this.analyticsRepo?.constructor.name || 'Not initialized'
       }
     };

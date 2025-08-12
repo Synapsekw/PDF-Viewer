@@ -10,34 +10,22 @@ interface PageDropoffChartProps {
   loading?: boolean;
 }
 
-const DropoffCard = styled(Card)`
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(${theme.colors.glass.blur});
-  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
-  border: 1px solid ${theme.colors.glass.border};
-  border-radius: ${theme.borderRadius.xl};
-  box-shadow: ${theme.shadows.lg};
+const DropoffCard = styled.div`
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   height: 450px;
   padding: ${theme.spacing[6]};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(35, 47, 61, 0.9);
-    pointer-events: none;
-    z-index: 0;
-  }
-  
   &:hover {
-    box-shadow: ${theme.shadows.xl};
-    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: rgba(71, 85, 105, 0.5);
   }
 `;
 
@@ -193,7 +181,7 @@ const PageDropoffChart: React.FC<PageDropoffChartProps> = ({ loading = false }) 
 
   if (loading) {
     return (
-      <DropoffCard variant="glass">
+      <DropoffCard>
         <DropoffTitle>Drop-off by Page</DropoffTitle>
         <LoadingState>Loading drop-off data...</LoadingState>
       </DropoffCard>
@@ -201,7 +189,7 @@ const PageDropoffChart: React.FC<PageDropoffChartProps> = ({ loading = false }) 
   }
 
   return (
-    <DropoffCard variant="glass">
+    <DropoffCard>
       <DropoffTitle>Drop-off by Page</DropoffTitle>
       
       <SelectContainer>

@@ -10,8 +10,8 @@ const DB_VERSION = 1;
 const STORE_NAME = 'pdfs';
 
 // Configure PDF.js worker
-// Use CDN worker for better compatibility
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Use local worker file for better reliability
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
 
 class LocalLibraryRepository implements LibraryRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -97,37 +97,58 @@ class LocalLibraryRepository implements LibraryRepository {
   }
 
   async add(file: File): Promise<LibraryPDF> {
+    console.log('LocalLibraryRepository.add called with file:', file.name, 'Size:', file.size);
+    
     if (!this.dbPromise) {
+      console.error('IndexedDB not available');
       throw new Error('IndexedDB not available');
     }
-    const db = await this.dbPromise;
-    const id = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Generate thumbnail and get page count
-    const [thumbnail, pageCount] = await Promise.all([
-      this.generateThumbnail(file),
-      this.getPageCount(file)
-    ]);
-    
-    const pdfData: LibraryPDF = {
-      id,
-      name: file.name.replace(/\.pdf$/i, ''),
-      originalName: file.name,
-      size: file.size,
-      addedDate: new Date(),
-      pageCount,
-      blob: file,
-      thumbnail
-    };
+    try {
+      const db = await this.dbPromise;
+      console.log('Database connection established');
+      
+      const id = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Generated ID:', id);
+      
+      // Generate thumbnail and get page count
+      console.log('Generating thumbnail and getting page count...');
+      const [thumbnail, pageCount] = await Promise.all([
+        this.generateThumbnail(file),
+        this.getPageCount(file)
+      ]);
+      console.log('Thumbnail generated:', !!thumbnail, 'Page count:', pageCount);
+      
+      const pdfData: LibraryPDF = {
+        id,
+        name: file.name, // Keep the full original name including extension
+        originalName: file.name,
+        size: file.size,
+        addedDate: new Date(),
+        pageCount,
+        blob: file,
+        thumbnail
+      };
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.add(pdfData);
+      return new Promise((resolve, reject) => {
+        console.log('Starting IndexedDB transaction...');
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.add(pdfData);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(pdfData);
-    });
+        request.onerror = () => {
+          console.error('Failed to add PDF to IndexedDB:', request.error);
+          reject(request.error);
+        };
+        request.onsuccess = () => {
+          console.log('PDF successfully added to IndexedDB:', id);
+          resolve(pdfData);
+        };
+      });
+    } catch (error) {
+      console.error('Error in LocalLibraryRepository.add:', error);
+      throw error;
+    }
   }
 
   async get(id: string): Promise<LibraryPDF | null> {

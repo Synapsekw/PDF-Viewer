@@ -69,18 +69,18 @@ class ShareService {
     return this.supabaseRepo !== null;
   }
 
-  async createShare(docId: string, options?: any) {
+  async createShare(docId: string, expiryDays?: number) {
     if (!this.repo) {
       throw new Error('Share repository not initialized');
     }
 
     try {
-      return await this.repo.createShare(docId, options);
+      return await this.repo.createShare(docId, expiryDays);
     } catch (error) {
       // If Supabase fails and we're in auto mode, try local fallback
       if (SHARE_MODE === 'auto' && this.supabaseRepo && this.repo === this.supabaseRepo) {
         console.warn('Supabase share creation failed, falling back to local:', error);
-        return await this.localRepo.createShare(docId);
+        return await this.localRepo.createShare(docId, expiryDays);
       }
       throw error;
     }

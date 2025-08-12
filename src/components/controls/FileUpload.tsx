@@ -3,7 +3,7 @@ import { usePdf } from '../../pdf/PdfContext';
 
 export const FileUpload: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { setFile } = usePdf();
+  const { setFile, setDocumentMeta } = usePdf();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -17,6 +17,8 @@ export const FileUpload: React.FC = () => {
         const buffer = arrayBuffer.slice(0);
         const uint8Array = new Uint8Array(buffer);
         setFile(uint8Array);
+        // Set document metadata
+        setDocumentMeta({ name: file.name });
       }
     };
     reader.onerror = (e) => {

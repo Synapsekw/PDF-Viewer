@@ -113,7 +113,7 @@ const User: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Card */}
         <div className="bg-slate-800/50 backdrop-blur-md rounded-lg p-6 border border-slate-700/50">
@@ -265,7 +265,7 @@ const User: React.FC = () => {
           onClose={hideToast}
         />
       )}
-    </div>
+    </>
   );
 };
 

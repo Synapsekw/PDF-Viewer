@@ -44,6 +44,14 @@ export interface PdfContextType {
   rotation: number;
   /** The original file data */
   file: string | Uint8Array | null;
+  /** Document metadata including name */
+  documentMeta: { name: string; id?: string } | null;
+  /** Whether the PDF is currently loading */
+  isLoading: boolean;
+  /** Loading progress percentage (0-100) */
+  loadingProgress: number;
+  /** Whether a page is currently being rendered */
+  isRendering: boolean;
   /** Set the PDF document (internal use only) */
   setDocument: (doc: PDFDocumentProxy) => void;
   /** Navigate to a specific page */
@@ -54,6 +62,14 @@ export interface PdfContextType {
   setRotation: (rotation: number) => void;
   /** Set the PDF file data (internal use only) */
   setFile: (file: string | Uint8Array) => void;
+  /** Set document metadata (internal use only) */
+  setDocumentMeta: (meta: { name: string; id?: string } | null) => void;
+  /** Set loading state (internal use only) */
+  setLoading: (loading: boolean) => void;
+  /** Set loading progress (internal use only) */
+  setLoadingProgress: (progress: number) => void;
+  /** Set rendering state (internal use only) */
+  setRendering: (rendering: boolean) => void;
 }
 
 /**

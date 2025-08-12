@@ -34,11 +34,22 @@ export const DropZone: React.FC<DropZoneProps> = ({ onFilesSelected, isVisible, 
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    console.log('Files selected:', files);
+    
     if (files) {
-      const validFiles = Array.from(files).filter(isValidPDF);
+      const allFiles = Array.from(files);
+      console.log('All files:', allFiles);
+      
+      const validFiles = allFiles.filter(isValidPDF);
+      console.log('Valid PDF files:', validFiles);
+      
       if (validFiles.length > 0) {
+        console.log('Calling onFilesSelected with:', validFiles);
         onFilesSelected(validFiles);
         onClose();
+      } else {
+        console.error('No valid PDF files found');
+        alert('Please select valid PDF files');
       }
     }
   }, [onFilesSelected, onClose]);

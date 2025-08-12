@@ -8,6 +8,7 @@ export interface ShareMeta {
   title: string;
   size: number;
   createdAt: string;
+  expiresAt?: string; // ISO string for expiry date
 }
 
 export interface ShareLink {
@@ -17,7 +18,7 @@ export interface ShareLink {
 }
 
 export interface ShareRepository {
-  createShare(docId: string): Promise<{ token: string; meta: ShareMeta }>;
+  createShare(docId: string, expiryDays?: number): Promise<{ token: string; meta: ShareMeta }>;
   resolveToken(token: string): Promise<{ docId: string; meta: ShareMeta } | null>;
   listShares(): Promise<Array<{ token: string; meta: ShareMeta }>>;
   revokeShare(token: string): Promise<void>;

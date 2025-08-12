@@ -9,16 +9,16 @@ export class SupabaseConfigManager {
   private static readonly MIGRATION_STATUS_KEY = 'migration_status';
   
   private static defaultConfig: SupabaseConfig = {
-    url: '',
-    anonKey: '',
-    serviceRoleKey: '',
-    enabled: false,
-    mode: 'local',
+    url: import.meta.env.VITE_SUPABASE_URL || '',
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    serviceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '',
+    enabled: !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+    mode: (import.meta.env.VITE_STORAGE_MODE as StorageMode) || 'local',
     features: {
-      auth: false,
-      storage: false,
-      realtime: false,
-      analytics: false
+      auth: import.meta.env.VITE_ENABLE_AUTH === 'true',
+      storage: import.meta.env.VITE_ENABLE_STORAGE === 'true',
+      realtime: import.meta.env.VITE_ENABLE_REALTIME === 'true',
+      analytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true'
     },
     fallbackToLocal: true
   };

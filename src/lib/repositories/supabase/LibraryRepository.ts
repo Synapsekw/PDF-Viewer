@@ -10,7 +10,7 @@ import { PDFStorageManager, UploadProgress, StorageResult } from '../../storage/
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
 
 export class SupabasePDFLibraryRepository implements IPDFLibraryRepository {
   private storageManager: PDFStorageManager;
@@ -79,6 +79,37 @@ export class SupabasePDFLibraryRepository implements IPDFLibraryRepository {
 
   private async retrieveDocument(storagePath?: string, base64Data?: string): Promise<Blob> {
     return await this.storageManager.retrievePDF(storagePath, base64Data);
+  }
+
+  /**
+   * Get a short-lived signed URL for rendering/downloading in the viewer
+   */
+  async getSignedUrl(id: string, expiresInSeconds: number = 600): Promise<string> {
+    const { data: userData } = await this.supabase.auth.getUser();
+    if (!userData.user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: doc, error } = await this.supabase
+      .from('documents')
+      .select('storage_path')
+      .eq('id', id)
+      .eq('user_id', userData.user.id)
+      .single();
+
+    if (error || !doc?.storage_path) {
+      throw new Error('Document not found or missing storage path');
+    }
+
+    const { data: signed, error: urlError } = await this.supabase.storage
+      .from('documents')
+      .createSignedUrl(doc.storage_path, expiresInSeconds);
+
+    if (urlError || !signed?.signedUrl) {
+      throw new Error(`Failed to create signed URL: ${urlError?.message}`);
+    }
+
+    return signed.signedUrl;
   }
 
   async add(file: File, onProgress?: (progress: UploadProgress) => void): Promise<LibraryPDF> {
@@ -173,7 +204,7 @@ export class SupabasePDFLibraryRepository implements IPDFLibraryRepository {
       const metadata = data.metadata as any;
       const base64Data = metadata?.base64Data;
       
-      blob = await this.retrieveDocument(data.storage_path, base64Data);
+      blob = await this.retrieveDocument(data.storage_path || undefined, base64Data || undefined);
     } catch (error) {
       console.error('Failed to retrieve document blob:', error);
       // Return empty blob if retrieval fails
@@ -201,7 +232,7 @@ export class SupabasePDFLibraryRepository implements IPDFLibraryRepository {
     const { data, error } = await this.supabase
       .from('documents')
       .select('id, name, original_name, size_bytes, page_count, thumbnail_data, created_at')
-      .eq('user_id', userData.user.id)
+      .eq('user_id', (userData.user?.id || '') as string)
       .order('created_at', { ascending: false });
 
     if (error) {

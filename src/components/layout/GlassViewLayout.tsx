@@ -111,9 +111,9 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
 
 
       {/* Main Content */}
-      <div className="relative z-10 flex h-screen p-6 space-x-6">
-        {/* Left Panel - PDF Viewer (70%) */}
-        <div className="flex-1 w-[70%] relative">
+      <div className="relative z-10 flex flex-col lg:flex-row h-screen p-2 lg:p-6 space-y-4 lg:space-y-0 lg:space-x-6">
+        {/* Left Panel - PDF Viewer (70% on desktop, full width on mobile) */}
+        <div className="flex-1 w-full lg:w-[70%] relative">
           <div className="h-full bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-2xl shadow-lg">
             {/* PDF Viewer Content */}
             <div className="w-full h-full">
@@ -123,8 +123,8 @@ export const GlassViewLayout: React.FC<GlassViewLayoutProps> = ({
           </div>
         </div>
 
-        {/* Right Panel - AI Assistant (30%) */}
-        <div className="w-[30%] flex flex-col">
+        {/* Right Panel - AI Assistant (30% on desktop, full width on mobile) */}
+        <div className="w-full lg:w-[30%] flex flex-col h-96 lg:h-full">
           <div className="h-full bg-[rgba(35,47,61,0.6)] backdrop-blur-[10px] border border-[rgba(255,255,255,0.1)] rounded-2xl shadow-lg overflow-hidden">
             {/* AI Assistant Header */}
             <div className="p-6 border-b border-[rgba(255,255,255,0.1)]">

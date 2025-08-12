@@ -55,38 +55,21 @@ export class PDFStorageManager {
     userId: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<StorageResult> {
-    // Check file size and determine strategy
-    const maxSupabaseSize = 50 * 1024 * 1024; // 50MB limit for Supabase
-    const maxBase64Size = 10 * 1024 * 1024; // 10MB limit for base64 in DB
-
-    if (this.options.useSupabaseStorage && file.size <= maxSupabaseSize) {
+    // Cloud-first with graceful fallback to base64 in DB if storage is unavailable
+    try {
+      return await this.uploadToSupabaseStorage(file, documentId, userId, onProgress);
+    } catch (error) {
+      // Fall back to base64 storage to ensure the document can still be saved and viewed
       try {
-        return await this.uploadToSupabaseStorage(file, documentId, userId, onProgress);
-      } catch (error) {
-        console.warn('Supabase storage failed, falling back to base64:', error);
-        // Fall back to base64 if Supabase fails
-        if (file.size <= maxBase64Size) {
-          return await this.storeAsBase64(file, onProgress);
-        } else {
-          return {
-            success: false,
-            error: 'File too large for fallback storage',
-            storageType: 'fallback'
-          };
-        }
+        return await this.storeAsBase64(file, onProgress);
+      } catch (fallbackError) {
+        return {
+          success: false,
+          error: (fallbackError instanceof Error ? fallbackError.message : 'Upload failed'),
+          storageType: 'fallback'
+        };
       }
     }
-
-    // Direct base64 storage for smaller files
-    if (file.size <= maxBase64Size) {
-      return await this.storeAsBase64(file, onProgress);
-    }
-
-    return {
-      success: false,
-      error: 'File too large for available storage options',
-      storageType: 'fallback'
-    };
   }
 
   /**
@@ -178,56 +161,10 @@ export class PDFStorageManager {
     let uploadedBytes = 0;
 
     try {
-      // Note: This is a simplified chunked upload implementation
-      // In a production environment, you might want to use Supabase's resumable uploads
-      // or implement a more sophisticated chunking strategy
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        const chunkPath = `${filePath}.chunk.${i}`;
-
-        for (let attempt = 0; attempt < this.options.maxRetries; attempt++) {
-          try {
-            const { error } = await this.supabase.storage
-              .from('documents')
-              .upload(chunkPath, chunk, {
-                cacheControl: '3600',
-                upsert: true
-              });
-
-            if (error) {
-              throw new Error(`Chunk upload failed: ${error.message}`);
-            }
-
-            uploadedBytes += chunk.size;
-            
-            onProgress?.({
-              progress: Math.round((uploadedBytes / file.size) * 100),
-              bytesUploaded: uploadedBytes,
-              totalBytes: file.size,
-              isComplete: uploadedBytes === file.size
-            });
-
-            break; // Success, move to next chunk
-
-          } catch (error) {
-            if (attempt < this.options.maxRetries - 1) {
-              await this.delay(this.options.retryDelay * (attempt + 1));
-            } else {
-              throw error;
-            }
-          }
-        }
-      }
-
-      // Combine chunks (this would need server-side support in a real implementation)
-      await this.combineChunks(filePath, chunks.length);
-
-      return {
-        success: true,
-        storagePath: filePath,
-        storageType: 'supabase'
-      };
+      // For production, prefer direct upload up to 50MB. If larger, we currently
+      // fall back to direct upload attempts (many browsers can handle ~100MB in one go).
+      // Replace this with resumable uploads when needed.
+      return await this.directUpload(file, filePath, onProgress);
 
     } catch (error) {
       // Clean up any uploaded chunks on failure
@@ -381,11 +318,7 @@ export class PDFStorageManager {
     return chunks;
   }
 
-  private async combineChunks(filePath: string, chunkCount: number): Promise<void> {
-    // This is a placeholder - in a real implementation, you would need
-    // server-side support to combine chunks into the final file
-    console.log(`Would combine ${chunkCount} chunks for ${filePath}`);
-  }
+  private async combineChunks(filePath: string, chunkCount: number): Promise<void> {}
 
   private async cleanupChunks(filePath: string, chunkCount: number): Promise<void> {
     const chunkPaths = Array.from(

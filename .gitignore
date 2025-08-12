@@ -10,7 +10,37 @@ coverage/
 
 # env & OS/editor noise
 .env
+.env.*
+.env.local
 .env.*.local
+*.env
+!env.example
 .DS_Store
 .vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+
+# Private keys and certificates
+*.pem
+*.key
+*.cert
+*.p12
+
+# Database files
+*.sqlite
+*.db
+
+# Backup files
+*.backup
+*.bak
+
+# OS files
+Thumbs.db
+*.swp
+.Spotlight-V100
+.Trashes
 

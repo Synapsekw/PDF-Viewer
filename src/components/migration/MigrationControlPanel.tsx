@@ -136,7 +136,7 @@ export const MigrationControlPanel: React.FC<MigrationControlPanelProps> = ({
           onClick={checkHealth}
           disabled={isLoading}
           size="sm"
-          variant="outline"
+          variant="secondary"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
@@ -280,7 +280,7 @@ export const MigrationControlPanel: React.FC<MigrationControlPanelProps> = ({
               
               <Button
                 onClick={handleRollbackToLocal}
-                variant="outline"
+                variant="secondary"
                 size="sm"
               >
                 Rollback to Local

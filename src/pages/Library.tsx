@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, Download, Copy, X, Share2, ExternalLink } from 'lucide-react';
 import { LibraryPDFMetadata, LibraryFilters, ViewMode, LibraryState } from '../features/library/types';
-import { localLibraryRepo } from '../features/library/localRepo';
 import { filterAndSortPDFs, generateUniqueFileName } from '../features/library/utils';
 import { LibraryControls } from '../features/library/components/LibraryControls';
 import { PDFCard } from '../features/library/components/PDFCard';
@@ -10,6 +9,8 @@ import { DropZone } from '../features/library/components/DropZone';
 import { useToast } from '../hooks/useToast';
 import { Toast } from '../components/ui/Toast';
 import { shareService } from '../features/share/shareService';
+import { repositoryManager } from '../lib/repositories/RepositoryManager';
+import { SupabaseClientManager } from '../lib/supabase/client';
 
 const Library: React.FC = () => {
   const navigate = useNavigate();
@@ -28,10 +29,26 @@ const Library: React.FC = () => {
   });
   
   const [showDropZone, setShowDropZone] = useState(false);
-  const [shareModal, setShareModal] = useState<{ isOpen: boolean; pdfId: string; shareUrl: string }>({
+  const [shareModal, setShareModal] = useState<{ 
+    isOpen: boolean; 
+    pdfId: string; 
+    shareUrl: string;
+    expiryDays?: number;
+  }>({
     isOpen: false,
     pdfId: '',
-    shareUrl: ''
+    shareUrl: '',
+    expiryDays: undefined
+  });
+  
+  const [uploadProgress, setUploadProgress] = useState<{
+    isUploading: boolean;
+    progress: number;
+    fileName: string;
+  }>({
+    isUploading: false,
+    progress: 0,
+    fileName: ''
   });
 
   // Load PDFs on mount
@@ -39,23 +56,44 @@ const Library: React.FC = () => {
     loadPDFs();
   }, []);
 
-  const loadPDFs = async () => {
+  const loadPDFs = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
-      const pdfs = await localLibraryRepo.list();
+      
+      // Configure repository manager to use Supabase if user is authenticated
+      const supabase = SupabaseClientManager.getClient();
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          repositoryManager.configure({ mode: 'supabase' });
+        } else {
+          repositoryManager.configure({ mode: 'local' });
+        }
+      } else {
+        repositoryManager.configure({ mode: 'local' });
+      }
+      
+      const libraryRepo = repositoryManager.getLibraryRepository();
+      const pdfs = await libraryRepo.list();
       setState(prev => ({ ...prev, pdfs, isLoading: false }));
     } catch (error) {
       console.error('Failed to load PDFs:', error);
       showToast('Failed to load PDF library', 'error');
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  };
+  }, [showToast]);
 
-  const handleFilesSelected = async (files: File[]) => {
+  const handleFilesSelected = useCallback(async (files: File[]) => {
+    console.log('handleFilesSelected called with files:', files);
+    
     try {
       const existingNames = state.pdfs.map(pdf => pdf.originalName);
+      const libraryRepo = repositoryManager.getLibraryRepository();
+      console.log('Library repository:', libraryRepo);
       
       for (const file of files) {
+        console.log('Processing file:', file.name, 'Size:', file.size);
+        
         // Generate unique filename if needed
         const uniqueName = generateUniqueFileName(file.name, existingNames);
         
@@ -64,26 +102,66 @@ const Library: React.FC = () => {
           ? new File([file], uniqueName, { type: file.type })
           : file;
         
-        await localLibraryRepo.add(fileToAdd);
+        console.log('Adding file to library:', fileToAdd.name);
+        
+        // Set upload progress
+        setUploadProgress({
+          isUploading: true,
+          progress: 0,
+          fileName: fileToAdd.name
+        });
+        
+        // Add with progress callback
+        if ('add' in libraryRepo && typeof libraryRepo.add === 'function') {
+          await libraryRepo.add(fileToAdd, (progress: any) => {
+            if (progress && typeof progress.progress === 'number') {
+              setUploadProgress({
+                isUploading: true,
+                progress: progress.progress,
+                fileName: fileToAdd.name
+              });
+            }
+          });
+        } else {
+          await libraryRepo.add(fileToAdd);
+        }
+        
+        console.log('File added successfully:', fileToAdd.name);
         existingNames.push(uniqueName);
       }
       
+      // Clear upload progress
+      setUploadProgress({
+        isUploading: false,
+        progress: 0,
+        fileName: ''
+      });
+      
+      console.log('Reloading PDFs...');
       await loadPDFs();
       showToast(`Added ${files.length} PDF${files.length > 1 ? 's' : ''} to library`, 'success');
     } catch (error) {
       console.error('Failed to add PDFs:', error);
       showToast('Failed to add PDFs to library', 'error');
+      setUploadProgress({
+        isUploading: false,
+        progress: 0,
+        fileName: ''
+      });
     }
-  };
+  }, [state.pdfs, loadPDFs, showToast]);
 
   const handlePDFOpen = (id: string) => {
-    navigate(`/app?localId=${id}`);
+    console.log('Library: Opening PDF with ID:', id);
+    console.log('Library: Navigating to:', `/viewer?localId=${id}`);
+    navigate(`/viewer?localId=${id}`);
   };
 
   const handlePDFDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this PDF?')) {
       try {
-        await localLibraryRepo.delete(id);
+        const libraryRepo = repositoryManager.getLibraryRepository();
+        await libraryRepo.delete(id);
         await loadPDFs();
         showToast('PDF deleted successfully', 'success');
       } catch (error) {
@@ -98,7 +176,8 @@ const Library: React.FC = () => {
     
     if (window.confirm(`Are you sure you want to delete ${state.selectedPdfs.length} PDF${state.selectedPdfs.length > 1 ? 's' : ''}?`)) {
       try {
-        await Promise.all(state.selectedPdfs.map(id => localLibraryRepo.delete(id)));
+        const libraryRepo = repositoryManager.getLibraryRepository();
+        await Promise.all(state.selectedPdfs.map(id => libraryRepo.delete(id)));
         await loadPDFs();
         setState(prev => ({ ...prev, selectedPdfs: [] }));
         showToast('PDFs deleted successfully', 'success');
@@ -127,15 +206,23 @@ const Library: React.FC = () => {
   };
 
   const handlePDFShare = async (id: string) => {
+    setShareModal({
+      isOpen: true,
+      pdfId: id,
+      shareUrl: '',
+      expiryDays: undefined
+    });
+  };
+
+  const handleCreateShare = async () => {
     try {
-      const { token } = await shareService.createShare(id);
+      const { token } = await shareService.createShare(shareModal.pdfId, shareModal.expiryDays);
       const shareUrl = shareService.generatePublicUrl(token);
       
-      setShareModal({
-        isOpen: true,
-        pdfId: id,
+      setShareModal(prev => ({
+        ...prev,
         shareUrl
-      });
+      }));
       
       showToast('Share link generated successfully', 'success');
     } catch (error) {
@@ -155,7 +242,7 @@ const Library: React.FC = () => {
   };
 
   const closeShareModal = () => {
-    setShareModal({ isOpen: false, pdfId: '', shareUrl: '' });
+    setShareModal({ isOpen: false, pdfId: '', shareUrl: '', expiryDays: undefined });
   };
 
 
@@ -184,27 +271,25 @@ const Library: React.FC = () => {
       document.removeEventListener('dragover', handleGlobalDragOver);
       document.removeEventListener('drop', handleGlobalDrop);
     };
-  }, []);
+  }, [handleFilesSelected]);
 
   const filteredPDFs = filterAndSortPDFs(state.pdfs, state.filters);
 
   if (state.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-slate-400">Loading your PDF library...</div>
-          </div>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-slate-400">Loading your PDF library...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <>
+      <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6 px-4 lg:px-0">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">PDF Library</h1>
             <p className="text-slate-400">
@@ -222,7 +307,7 @@ const Library: React.FC = () => {
                 className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </div>
           )}
@@ -262,7 +347,7 @@ const Library: React.FC = () => {
         ) : (
           <div className={
             state.viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6'
               : 'space-y-3'
           }>
             {filteredPDFs.map(pdf => (
@@ -306,25 +391,57 @@ const Library: React.FC = () => {
             </div>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Public Share Link
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={shareModal.shareUrl}
-                    readOnly
-                    className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-200 text-sm font-mono"
-                  />
+              {!shareModal.shareUrl ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Link Expiry (Optional)
+                    </label>
+                    <select
+                      value={shareModal.expiryDays || ''}
+                      onChange={(e) => setShareModal(prev => ({ 
+                        ...prev, 
+                        expiryDays: e.target.value ? parseInt(e.target.value) : undefined 
+                      }))}
+                      className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-200 text-sm"
+                    >
+                      <option value="">No expiry</option>
+                      <option value="1">1 day</option>
+                      <option value="7">7 days</option>
+                      <option value="30">30 days</option>
+                      <option value="90">90 days</option>
+                    </select>
+                  </div>
+                  
                   <button
-                    onClick={handleCopyShareLink}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                    onClick={handleCreateShare}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Share2 className="w-4 h-4" />
+                    Generate Share Link
                   </button>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Public Share Link
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={shareModal.shareUrl}
+                      readOnly
+                      className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-200 text-sm font-mono"
+                    />
+                    <button
+                      onClick={handleCopyShareLink}
+                      className="flex items-center gap-2 px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="bg-slate-700/30 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-slate-300 mb-2">What happens when you share:</h4>
@@ -336,21 +453,42 @@ const Library: React.FC = () => {
                 </ul>
               </div>
               
-              <div className="flex gap-3">
-                <button
-                  onClick={() => window.open(shareModal.shareUrl, '_blank')}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Test Link
-                </button>
-                <button
-                  onClick={closeShareModal}
-                  className="px-4 py-2 text-slate-400 hover:text-slate-200"
-                >
-                  Close
-                </button>
+              {shareModal.shareUrl && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => window.open(shareModal.shareUrl, '_blank')}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Test Link
+                  </button>
+                  <button
+                    onClick={closeShareModal}
+                    className="px-4 py-2 text-slate-400 hover:text-slate-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Progress */}
+      {uploadProgress.isUploading && (
+        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700/50 p-4 min-w-[300px]">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            <div className="flex-1">
+              <p className="text-sm text-slate-200 mb-2">Uploading {uploadProgress.fileName}...</p>
+              <div className="w-full bg-slate-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress.progress}%` }}
+                />
               </div>
+              <p className="text-xs text-slate-400 mt-1">{Math.round(uploadProgress.progress)}%</p>
             </div>
           </div>
         </div>
@@ -364,7 +502,7 @@ const Library: React.FC = () => {
           onClose={hideToast}
         />
       )}
-    </div>
+    </>
   );
 };
 

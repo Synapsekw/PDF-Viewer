@@ -46,7 +46,7 @@ export const PDFViewerWithFeatures: React.FC<PDFViewerWithFeaturesProps> = ({
   }, []);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <PDFViewer 
         onToggleOutline={onToggleOutline} 
         canvasRef={canvasRef} 

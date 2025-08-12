@@ -32,35 +32,22 @@ const generateMockSparklineData = (trend: 'up' | 'down' | 'neutral' = 'up') => {
 };
 // MOCK_DATA_END
 
-const StyledCard = styled(Card)`
-  background: ${theme.colors.glass.background};
-  backdrop-filter: blur(${theme.colors.glass.blur});
-  -webkit-backdrop-filter: blur(${theme.colors.glass.blur});
-  border: 1px solid ${theme.colors.glass.border};
-  border-radius: ${theme.borderRadius.xl};
-  box-shadow: ${theme.shadows.lg};
+const StyledCard = styled.div`
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  height: 280px;
-  padding: ${theme.spacing[6]};
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(35, 47, 61, 0.9);
-    pointer-events: none;
-    z-index: 0;
-  }
+  height: 200px;
   
   &:hover {
     transform: scale(1.02);
-    box-shadow: ${theme.shadows.xl};
-    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: rgba(71, 85, 105, 0.5);
   }
 `;
 
@@ -86,17 +73,17 @@ const IconWrapper = styled.div`
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: ${theme.borderRadius.xl};
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 0.75rem;
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.25rem;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(71, 85, 105, 0.3);
   transition: all 0.3s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(51, 65, 85, 0.7);
     transform: scale(1.05);
   }
 `;
@@ -256,7 +243,7 @@ const SkeletonLoader = styled.div`
 
 export const KpiCardSkeleton: React.FC = () => (
   <SkeletonLoader>
-    <SkeletonCard variant="glass">
+    <SkeletonCard>
       <CardContent>
         <SkeletonHeader>
           <SkeletonTitle />
@@ -316,7 +303,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   };
 
   return (
-    <StyledCard variant="glass">
+    <StyledCard>
       <CardContent>
         <Header>
           <Title>{title}</Title>

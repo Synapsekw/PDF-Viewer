@@ -23,6 +23,8 @@ export const colors = {
     border: 'rgba(255, 255, 255, 0.1)', // Border color with transparency
     hover: 'rgba(255, 255, 255, 0.1)', // Hover state
     active: 'rgba(77, 171, 247, 0.2)', // Active/selected state
+    success: '#51cf66', // Success color
+    error: '#ff6b6b', // Error color
   },
   
   // Button colors

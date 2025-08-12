@@ -43,7 +43,7 @@ class LocalShareRepository implements ShareRepository {
       .substring(0, 16);
   }
 
-  async createShare(docId: string): Promise<{ token: string; meta: ShareMeta }> {
+  async createShare(docId: string, expiryDays?: number): Promise<{ token: string; meta: ShareMeta }> {
     // Get document metadata from library
     const pdf = await localLibraryRepo.get(docId);
     if (!pdf) {
@@ -51,10 +51,14 @@ class LocalShareRepository implements ShareRepository {
     }
 
     const token = this.generateToken();
+    const now = new Date();
+    const expiresAt = expiryDays ? new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000).toISOString() : undefined;
+    
     const meta: ShareMeta = {
       title: pdf.name,
       size: pdf.size,
-      createdAt: new Date().toISOString()
+      createdAt: now.toISOString(),
+      expiresAt
     };
 
     const shareLink: ShareLink = {
@@ -92,6 +96,13 @@ class LocalShareRepository implements ShareRepository {
         request.onsuccess = () => {
           const result = request.result as ShareLink;
           if (result) {
+            // Check if share has expired
+            if (result.meta.expiresAt && new Date(result.meta.expiresAt) < new Date()) {
+              console.log('LocalShareRepository: Token has expired:', token);
+              resolve(null);
+              return;
+            }
+            
             console.log('LocalShareRepository: Token resolved successfully:', {
               docId: result.docId,
               title: result.meta.title

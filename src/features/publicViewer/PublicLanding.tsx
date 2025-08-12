@@ -43,7 +43,7 @@ const PublicLanding: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
           <p className="text-slate-400">Loading document...</p>
@@ -54,7 +54,7 @@ const PublicLanding: React.FC = () => {
 
   if (error || !documentMeta) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="max-w-md mx-auto text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-4">Document Not Found</h1>
@@ -73,8 +73,7 @@ const PublicLanding: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
@@ -141,7 +140,6 @@ const PublicLanding: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

@@ -15,6 +15,10 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
   const [scale, setScale] = useState(1.0); // 100% starting zoom
   const [rotation, setRotation] = useState(0);
   const [file, setFile] = useState<string | Uint8Array | null>(null);
+  const [documentMeta, setDocumentMeta] = useState<{ name: string; id?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  const [isRendering, setIsRendering] = useState(false);
   
   // Debug logging for file changes
   useEffect(() => {
@@ -27,6 +31,8 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
     setDocument(doc);
     setTotalPages(doc.numPages);
     setCurrentPage(1);
+    setIsLoading(false);
+    setLoadingProgress(100);
   }, []);
 
   const handleSetCurrentPage = useCallback((page: number) => {
@@ -50,6 +56,28 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
   const handleSetFile = useCallback((newFile: string | Uint8Array) => {
     console.log('PdfContext: setFile called with:', typeof newFile, newFile instanceof Uint8Array ? `Uint8Array(${newFile.length})` : newFile);
     setFile(newFile);
+    setIsLoading(true);
+    setLoadingProgress(0);
+  }, []);
+
+  const handleSetDocumentMeta = useCallback((meta: { name: string; id?: string } | null) => {
+    console.log('PdfContext: setDocumentMeta called with:', meta);
+    setDocumentMeta(meta);
+  }, []);
+
+  const handleSetLoading = useCallback((loading: boolean) => {
+    setIsLoading(loading);
+    if (!loading) {
+      setLoadingProgress(100);
+    }
+  }, []);
+
+  const handleSetLoadingProgress = useCallback((progress: number) => {
+    setLoadingProgress(progress);
+  }, []);
+
+  const handleSetRendering = useCallback((rendering: boolean) => {
+    setIsRendering(rendering);
   }, []);
 
   // Memoize the context value to prevent unnecessary re-renders
@@ -60,11 +88,19 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
     scale,
     rotation,
     file,
+    documentMeta,
+    isLoading,
+    loadingProgress,
+    isRendering,
     setDocument: handleSetDocument,
     setCurrentPage: handleSetCurrentPage,
     setScale: handleSetScale,
     setRotation: handleSetRotation,
-    setFile: handleSetFile
+    setFile: handleSetFile,
+    setDocumentMeta: handleSetDocumentMeta,
+    setLoading: handleSetLoading,
+    setLoadingProgress: handleSetLoadingProgress,
+    setRendering: handleSetRendering
   }), [
     document,
     currentPage,
@@ -72,11 +108,19 @@ export const PdfProvider: React.FC<PdfProviderProps> = ({ children }) => {
     scale,
     rotation,
     file,
+    documentMeta,
+    isLoading,
+    loadingProgress,
+    isRendering,
     handleSetDocument,
     handleSetCurrentPage,
     handleSetScale,
     handleSetRotation,
-    handleSetFile
+    handleSetFile,
+    handleSetDocumentMeta,
+    handleSetLoading,
+    handleSetLoadingProgress,
+    handleSetRendering
   ]);
 
   return (

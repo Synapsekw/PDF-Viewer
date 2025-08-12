@@ -12,8 +12,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-inter">
-      {/* Background gradient overlay with blur effect - matches landing exactly */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
+      {/* Single background gradient - no overlay to prevent layering */}
       
       {/* Mobile backdrop */}
       {isMobile && isOpen && (
@@ -41,12 +40,12 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
       {/* Content area */}
       <div 
-        className="relative z-10 min-h-screen transition-all duration-200 ease-out"
+        className="relative z-10 h-screen transition-all duration-200 ease-out"
         style={{ 
           marginLeft: isMobile ? 0 : 'var(--sidebar-w)',
         }}
       >
-        <div className="p-6">
+        <div className="h-full overflow-hidden">
           {children}
         </div>
       </div>

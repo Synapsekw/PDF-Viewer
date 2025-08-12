@@ -197,7 +197,7 @@ export const MigrationTestDashboard: React.FC<TestDashboardProps> = ({ className
                 <Tooltip content="Download Report">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => downloadReport('validation')}
                   >
                     <Download className="w-4 h-4" />
@@ -317,7 +317,7 @@ export const MigrationTestDashboard: React.FC<TestDashboardProps> = ({ className
                 <Tooltip content="Download Report">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => downloadReport('benchmark')}
                   >
                     <Download className="w-4 h-4" />
@@ -428,7 +428,7 @@ export const MigrationTestDashboard: React.FC<TestDashboardProps> = ({ className
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               runValidation();
               setTimeout(() => runBenchmarks(), 1000);
@@ -441,7 +441,7 @@ export const MigrationTestDashboard: React.FC<TestDashboardProps> = ({ className
           {(validationReport || benchmarkReport) && (
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               onClick={() => {
                 setValidationReport(null);
                 setBenchmarkReport(null);

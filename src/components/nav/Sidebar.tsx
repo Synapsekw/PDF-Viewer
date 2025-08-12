@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../hooks/useSidebar';
-import { LayoutDashboard, FileText, Menu, ChevronLeft, Settings, User, Library, BarChart3, Home, Shield } from 'lucide-react';
+import { LayoutDashboard, FileText, Menu, ChevronLeft, Settings, User, Library, BarChart3, Home, Shield, LogOut } from 'lucide-react';
 import NavItem from './NavItem';
 import SidebarSection from './SidebarSection';
 import { getNavBadges } from '../../lib/nav/mockNavBadges';
+import { repositoryManager } from '../../lib/repositories/RepositoryManager';
 
-// Import debug script in development
-if (process.env.NODE_ENV === 'development') {
-  import('../../scripts/checkAdminStatus').then(module => {
-    (window as any).checkAdminStatus = module.checkCurrentUserAdmin;
-  });
-}
+
 
 // TODO: Hook real nav items in Step 3.
 // TODO: Refine a11y for drawer focus trapping later.
@@ -18,8 +15,10 @@ if (process.env.NODE_ENV === 'development') {
 
 const Sidebar: React.FC = () => {
   const { collapsed, toggle, isMobile, closeDrawer } = useSidebar();
+  const navigate = useNavigate();
   const [badges, setBadges] = useState({ documents: 0, questionsNew: 0 });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const loadBadges = async () => {
@@ -27,7 +26,6 @@ const Sidebar: React.FC = () => {
       setBadges(badgeData);
     };
     loadBadges();
-    checkAdminStatus();
 
     // Set up auth state listener
     const setupAuthListener = async () => {
@@ -35,10 +33,20 @@ const Sidebar: React.FC = () => {
       const supabase = SupabaseClientManager.getClient();
       
       if (supabase) {
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setIsAuthenticated(!!session);
+          if (session) {
+            checkUserAdminStatus();
+          }
+        });
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           console.log('🔄 Auth state changed:', event, session?.user?.email);
+          setIsAuthenticated(!!session);
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            checkAdminStatus();
+            // Check admin status when user signs in
+            checkUserAdminStatus();
           } else if (event === 'SIGNED_OUT') {
             setIsAdmin(false);
           }
@@ -54,23 +62,16 @@ const Sidebar: React.FC = () => {
     };
   }, []);
 
-  const checkAdminStatus = async () => {
+  const checkUserAdminStatus = async () => {
     try {
-      console.log('🔍 Checking admin status...');
-      // Import here to avoid circular dependency
       const { SupabaseClientManager } = await import('../../lib/supabase/client');
       const supabase = SupabaseClientManager.getClient();
       
-      if (!supabase) {
-        console.log('❌ No Supabase client available');
-        return;
-      }
+      if (!supabase) return;
 
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('👤 Current user:', user?.email, 'Error:', authError);
-      
-      if (!user) {
-        console.log('❌ No authenticated user');
+      if (authError || !user) {
+        setIsAdmin(false);
         return;
       }
 
@@ -78,20 +79,52 @@ const Sidebar: React.FC = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle(); // Use maybeSingle to avoid error on no rows
-
-      console.log('👤 Profile data:', profile, 'Error:', profileError);
+        .maybeSingle();
 
       if (profile) {
         const settings = profile.settings as any || {};
         const isAdminUser = settings.role === 'admin' || settings.permissions?.includes('admin');
-        console.log('⚡ Settings:', settings, 'Is Admin:', isAdminUser);
         setIsAdmin(isAdminUser);
+      } else {
+        setIsAdmin(false);
       }
     } catch (error) {
       console.warn('Failed to check admin status:', error);
+      setIsAdmin(false);
     }
   };
+
+  const handleLogout = async () => {
+    try {
+      const { SupabaseClientManager } = await import('../../lib/supabase/client');
+      const supabase = SupabaseClientManager.getClient();
+      
+      if (supabase) {
+        // Sign out from Supabase
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Logout error:', error);
+          return;
+        }
+      }
+      
+      // Clear all local storage and session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Reset repository manager to local mode
+      repositoryManager.configure({ mode: 'local' });
+      
+      // Navigate to home page
+      navigate('/');
+      
+      console.log('Successfully logged out');
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
+
+
 
   return (
     <nav 
@@ -192,22 +225,29 @@ const Sidebar: React.FC = () => {
           </SidebarSection>
         )}
 
-        {/* Debug info in development */}
-        {process.env.NODE_ENV === 'development' && !collapsed && (
-          <div className="mt-auto p-2 text-xs text-slate-400 border-t border-slate-700">
-            <div>Admin Status: {isAdmin ? '✅ Yes' : '❌ No'}</div>
-            <div>Dev Mode: ✅ Active</div>
-            <button 
-              onClick={checkAdminStatus}
-              className="mt-1 px-2 py-1 bg-slate-600 text-white text-xs rounded hover:bg-slate-500"
-            >
-              Recheck Admin
-            </button>
-          </div>
-        )}
+
 
         {/* TODO: Add future sections here */}
       </div>
+
+      {/* Logout Button - Only show when authenticated */}
+      {isAuthenticated && (
+        <div className="p-4 border-t border-slate-700/50">
+          <button
+            onClick={handleLogout}
+            className={`
+              w-full flex items-center gap-3 px-3 py-2 
+              text-slate-300 hover:text-white hover:bg-slate-700/50 
+              rounded-lg transition-colors
+              ${collapsed ? 'justify-center' : 'justify-start'}
+            `}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="w-5 h-5" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+      )}
     </nav>
   );
 };

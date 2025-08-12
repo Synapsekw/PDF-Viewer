@@ -1,7 +1,6 @@
 // TODO: Replace MOCK layer with real analytics API when backend is ready.
 
 import React, { useState, useEffect } from 'react';
-import styled from '@emotion/styled';
 import { useNavigate } from 'react-router-dom';
 import { 
   TotalViewsCard, 
@@ -19,122 +18,12 @@ import PageDropoffChart from '../components/dashboard/PageDropoffChart';
 import { getKpis, getViewsTimeSeries, getTopPdfsByViews, getTopKeywords, getTopQuestions } from '../lib/analytics/mockAnalytics';
 import { Kpis, TimeSeriesDataPoint, TopPdfData, KeywordData, QuestionData } from '../lib/analytics/types';
 import { USE_MOCK_ANALYTICS } from '../lib/analytics/config';
-import theme from '../theme';
-
-const DashboardContainer = styled.div`
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #334155 50%, #0f172a 100%);
-  font-family: ${theme.typography.fontFamily};
-  position: relative;
-  
-  /* Background gradient overlay with blur effect - matches landing page exactly */
-  &::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(51, 65, 85, 0.95) 50%, rgba(15, 23, 42, 0.9) 100%);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    pointer-events: none;
-  }
-`;
 
 
 
-const MainContent = styled.main`
-  position: relative;
-  z-index: 10;
-  padding: 0 ${theme.spacing[6]} ${theme.spacing[8]};
-`;
 
-const KpiGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: ${theme.spacing[6]};
-  margin-top: ${theme.spacing[6]};
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-`;
 
-const ChartsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: ${theme.spacing[6]};
-  margin-top: ${theme.spacing[8]};
-  min-w-0;
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-`;
 
-const IntelligenceGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: ${theme.spacing[6]};
-  margin-top: ${theme.spacing[8]};
-  min-w-0;
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-`;
-
-const EngagementGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: ${theme.spacing[6]};
-  margin-top: ${theme.spacing[8]};
-  min-w-0;
-  
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-`;
-
-// TODO: refine sticky thresholds when we finalize header height.
-const SectionTitle = styled.h2`
-  color: ${theme.colors.text.primary};
-  font-size: ${theme.typography.fontSize.xl};
-  font-weight: ${theme.typography.fontWeight.semibold};
-  margin: ${theme.spacing[8]} 0 ${theme.spacing[6]} 0;
-  letter-spacing: -0.025em;
-  position: sticky;
-  top: 4rem; /* header height */
-  z-index: 20;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: ${theme.spacing[4]} 0;
-  margin-top: 0;
-  margin-bottom: ${theme.spacing[6]};
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`;
-
-const LoadingState = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: ${theme.colors.text.secondary};
-  font-size: ${theme.typography.fontSize.lg};
-`;
-
-const ErrorState = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: #ef4444;
-  font-size: ${theme.typography.fontSize.lg};
-  text-align: center;
-`;
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -223,33 +112,32 @@ const Dashboard: React.FC = () => {
 
     return (
     <div className="transition-[margin] duration-200 ease-out min-w-0">
-      <DashboardContainer>
-        <MainContent>
+      <div className="w-full space-y-6">
         {loading && (
-          <KpiGrid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             <KpiCardSkeleton />
             <KpiCardSkeleton />
             <KpiCardSkeleton />
             <KpiCardSkeleton />
-          </KpiGrid>
+          </div>
         )}
 
         {error && (
-          <ErrorState>
+          <div className="flex items-center justify-center min-h-[200px] text-red-500 text-lg">
             {error}
-          </ErrorState>
+          </div>
         )}
 
         {kpis && !loading && !error && (
-          <KpiGrid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             <TotalViewsCard value={kpis.totalViews} delta={kpis.deltas.totalViews} />
             <UniqueViewersCard value={kpis.uniqueViewers} delta={kpis.deltas.uniqueViewers} />
             <AvgTimeCard value={kpis.avgTimeSec} delta={kpis.deltas.avgTimeSec} />
             <DownloadsCard value={kpis.totalDownloads} delta={kpis.deltas.totalDownloads} />
-          </KpiGrid>
+          </div>
         )}
 
-        <ChartsGrid>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 min-w-0">
           <ViewsOverTime 
             data={viewsTimeSeries} 
             loading={chartsLoading} 
@@ -262,9 +150,9 @@ const Dashboard: React.FC = () => {
               console.log('TODO: Navigate to PDF viewer with ID:', pdfId);
             }}
           />
-        </ChartsGrid>
+        </div>
 
-        <IntelligenceGrid>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 min-w-0">
           <WordCloud 
             data={keywords} 
             loading={intelligenceLoading} 
@@ -273,14 +161,13 @@ const Dashboard: React.FC = () => {
             data={questions} 
             loading={intelligenceLoading}
           />
-        </IntelligenceGrid>
+        </div>
 
-        <EngagementGrid>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 min-w-0">
           <PageHeatmapPreview loading={false} />
           <PageDropoffChart loading={false} />
-        </EngagementGrid>
-      </MainContent>
-    </DashboardContainer>
+        </div>
+      </div>
     </div>
   );
 };

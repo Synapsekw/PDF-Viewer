@@ -11,11 +11,8 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-inter">
-      {/* Background gradient overlay with blur effect - matches app exactly */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-slate-900/90 backdrop-blur-sm"></div>
-      
       {/* Main content centered */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen">
         <div 
           onClick={handleLogoClick}
           className="cursor-pointer transition-all duration-300 hover:scale-105"
